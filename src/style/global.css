@@ -1,0 +1,64 @@
+/* src/styles/global.css */
+page {
+  background-color: #F5F5F0;
+  font-family: -apple-system, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  color: #1a1a1a;
+  font-size: 28rpx;
+}
+
+:root {
+  --primary: #FF5A35;
+  --primary-light: #FFF0EC;
+  --primary-mid: #FF7A5A;
+  --text-main: #1a1a1a;
+  --text-sub: #666666;
+  --text-hint: #aaaaaa;
+  --bg: #F5F5F0;
+  --card: #ffffff;
+  --border: #EBEBEB;
+  --tag-orange-bg: #FFF0EC;
+  --tag-orange-color: #FF5A35;
+  --tag-blue-bg: #EEF5FF;
+  --tag-blue-color: #3D7EE8;
+  --tag-pink-bg: #FFF0F6;
+  --tag-pink-color: #E84393;
+  --tag-green-bg: #EEFAF0;
+  --tag-green-color: #29A84A;
+  --tag-gray-bg: #F5F5F5;
+  --tag-gray-color: #888888;
+}
+
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* Flex helpers */
+.flex { display: flex; }
+.flex-col { display: flex; flex-direction: column; }
+.items-center { align-items: center; }
+.justify-between { justify-content: space-between; }
+.flex-1 { flex: 1; }
+.gap-8 { gap: 16rpx; }
+.gap-12 { gap: 24rpx; }
+
+/* Common card */
+.card {
+  background: var(--card);
+  border-radius: 24rpx;
+  border: 1rpx solid var(--border);
+}
+
+/* Tag styles */
+.tag {
+  display: inline-block;
+  font-size: 20rpx;
+  border-radius: 8rpx;
+  padding: 2rpx 10rpx;
+  line-height: 1.6;
+}
+.tag-orange { background: var(--tag-orange-bg); color: var(--tag-orange-color); }
+.tag-blue   { background: var(--tag-blue-bg);   color: var(--tag-blue-color); }
+.tag-pink   { background: var(--tag-pink-bg);   color: var(--tag-pink-color); }
+.tag-green  { background: var(--tag-green-bg);  color: var(--tag-green-color); }
+.tag-gray   { background: var(--tag-gray-bg);   color: var(--tag-gray-color); }
+.tag-anon   { background: var(--tag-orange-bg); color: var(--tag-orange-color); }
