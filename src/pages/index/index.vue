@@ -1,48 +1,29 @@
 <template>
-  <view class="content">
-    <image class="logo" src="/static/logo.png"></image>
-    <view class="text-area">
-      <text class="title">{{ title }}</text>
-    </view>
+  <view class="splash-screen">
+    <text>正在加载应用环境...</text>
   </view>
 </template>
 
-<script>
-export default {
-  data() {
-    return {
-      title: 'Hello',
-    }
-  },
-  onLoad() {},
-  methods: {},
-}
+<script setup>
+import { onMounted } from 'vue'
+import { useUserStore } from '@/stores/user'
+
+const userStore = useUserStore()
+
+onMounted(() => {
+  // 假设你的 userStore 中有 token 字段或 isLoggedIn 状态来判断是否登录
+  // 这里需要根据你实际的 store 数据结构来写
+  uni.switchTab({ url: '/pages/home/index' })
+})
 </script>
 
-<style>
-.content {
+<style scoped>
+.splash-screen {
   display: flex;
-  flex-direction: column;
+  justify-content: center;
   align-items: center;
-  justify-content: center;
-}
-
-.logo {
-  height: 200rpx;
-  width: 200rpx;
-  margin-top: 200rpx;
-  margin-left: auto;
-  margin-right: auto;
-  margin-bottom: 50rpx;
-}
-
-.text-area {
-  display: flex;
-  justify-content: center;
-}
-
-.title {
-  font-size: 36rpx;
-  color: #8f8f94;
+  height: 100vh;
+  font-size: 14px;
+  color: #999;
 }
 </style>
