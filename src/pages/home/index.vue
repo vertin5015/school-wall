@@ -4,10 +4,10 @@
     <view class="nav-bar">
       <view class="nav-inner">
         <text class="nav-title">校园墙</text>
-        <view class="nav-right">
+        <!-- <view class="nav-right">
           <view class="nav-icon-btn" @tap="goSearch">🔍</view>
           <view class="nav-icon-btn" @tap="goNotice">🔔</view>
-        </view>
+        </view> -->
       </view>
     </view>
 
@@ -43,11 +43,7 @@
 
       <!-- 帖子列表 -->
       <view class="post-list">
-        <PostCard
-          v-for="post in filteredPosts"
-          :key="post.id"
-          :post="post"
-        />
+        <PostCard v-for="post in filteredPosts" :key="post.id" :post="post" />
       </view>
 
       <!-- 加载更多 -->
@@ -60,38 +56,41 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
-import { usePostsStore } from '@/stores/posts'
-import PostCard from '@/components/PostCard.vue'
+import { ref, computed } from "vue";
+import { usePostsStore } from "@/stores/posts";
+import PostCard from "@/components/PostCard.vue";
 
-const postsStore = usePostsStore()
-const activeTab = ref('latest')
-const refreshing = ref(false)
-const loadingMore = ref(false)
+const postsStore = usePostsStore();
+const activeTab = ref("latest");
+const refreshing = ref(false);
+const loadingMore = ref(false);
 
 const tabs = [
-  { key: 'latest', label: '最新' },
-  { key: 'hot', label: '热门' },
-  { key: 'hole', label: '树洞' },
-  { key: 'love', label: '表白墙' },
-]
+  { key: "latest", label: "最新" },
+  { key: "hot", label: "热门" },
+  { key: "hole", label: "树洞" },
+  { key: "love", label: "表白墙" },
+];
 
 const filteredPosts = computed(() => {
-  const all = postsStore.postList
-  if (activeTab.value === 'hot') return [...all].sort((a, b) => b.likes - a.likes)
-  if (activeTab.value === 'hole') return all.filter(p => p.isAnon)
-  if (activeTab.value === 'love') return all.filter(p => p.tag === '表白')
-  return all
-})
+  const all = postsStore.postList;
+  if (activeTab.value === "hot")
+    return [...all].sort((a, b) => b.likes - a.likes);
+  if (activeTab.value === "hole") return all.filter((p) => p.isAnon);
+  if (activeTab.value === "love") return all.filter((p) => p.tag === "表白");
+  return all;
+});
 
 function switchTab(key) {
-  activeTab.value = key
+  activeTab.value = key;
 }
 
 async function onRefresh() {
-  refreshing.value = true
+  refreshing.value = true;
   // 模拟刷新延迟
-  setTimeout(() => { refreshing.value = false }, 800)
+  setTimeout(() => {
+    refreshing.value = false;
+  }, 800);
 }
 
 function loadMore() {
@@ -99,15 +98,15 @@ function loadMore() {
 }
 
 function goSearch() {
-  uni.showToast({ title: '搜索功能开发中', icon: 'none' })
+  uni.showToast({ title: "搜索功能开发中", icon: "none" });
 }
 
 function goNotice() {
-  uni.showToast({ title: '暂无新通知', icon: 'none' })
+  uni.showToast({ title: "暂无新通知", icon: "none" });
 }
 
 function onBanner() {
-  uni.showToast({ title: '活动详情开发中', icon: 'none' })
+  uni.showToast({ title: "活动详情开发中", icon: "none" });
 }
 </script>
 
@@ -123,7 +122,7 @@ function onBanner() {
 .nav-bar {
   background: #ffffff;
   border-bottom: 1rpx solid var(--border);
-  padding-top: var(--status-bar-height, 44px);
+  padding-top: 85rpx;
   flex-shrink: 0;
   position: sticky;
   top: 0;
@@ -134,7 +133,7 @@ function onBanner() {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16rpx 32rpx 16rpx;
+  padding: 27rpx 32rpx 16rpx;
 }
 
 .nav-title {
@@ -170,7 +169,7 @@ function onBanner() {
 .banner {
   margin: 20rpx 24rpx 12rpx;
   border-radius: 24rpx;
-  background: linear-gradient(120deg, #FF5A35, #FF9035);
+  background: linear-gradient(120deg, #ff5a35, #ff9035);
   padding: 28rpx 32rpx;
   display: flex;
   align-items: center;
@@ -209,7 +208,9 @@ function onBanner() {
   white-space: nowrap;
 }
 
-.section-tabs::-webkit-scrollbar { display: none; }
+.section-tabs::-webkit-scrollbar {
+  display: none;
+}
 
 .tab-item {
   padding: 20rpx 24rpx;

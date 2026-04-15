@@ -5,9 +5,13 @@
       <view class="post-avatar">{{ post.authorAvatar }}</view>
       <view class="post-meta">
         <view class="post-author-row">
-          <text class="post-author">{{ post.isAnon ? '匿名用户' : post.author }}</text>
+          <text class="post-author">{{
+            post.isAnon ? "匿名用户" : post.author
+          }}</text>
           <text v-if="post.isAnon" class="tag tag-anon">匿名</text>
-          <text class="tag" :class="`tag-${post.tagColor}`">{{ post.tag }}</text>
+          <text class="tag" :class="`tag-${post.tagColor}`">{{
+            post.tag
+          }}</text>
         </view>
         <text class="post-time">{{ post.time }}</text>
       </view>
@@ -32,16 +36,25 @@
 
     <!-- 底部操作栏 -->
     <view class="post-footer">
-      <view class="post-action" :class="{ liked: post.liked }" @tap.stop="onLike">
-        <text class="action-icon">{{ post.liked ? '❤️' : '🤍' }}</text>
+      <!-- Emoji 换成 SVG -->
+      <view
+        class="post-action"
+        :class="{ liked: post.liked }"
+        @tap.stop="onLike"
+      >
+        <text class="action-icon">{{ post.liked ? "❤️" : "🤍" }}</text>
         <text class="action-num">{{ post.likes }}</text>
       </view>
       <view class="post-action">
         <text class="action-icon">💬</text>
         <text class="action-num">{{ post.commentCount }}</text>
       </view>
-      <view class="post-action" :class="{ collected: post.collected }" @tap.stop="onCollect">
-        <text class="action-icon">{{ post.collected ? '⭐' : '☆' }}</text>
+      <view
+        class="post-action"
+        :class="{ collected: post.collected }"
+        @tap.stop="onCollect"
+      >
+        <text class="action-icon">{{ post.collected ? "⭐" : "☆" }}</text>
         <text class="action-num">收藏</text>
       </view>
       <view class="post-action post-share" @tap.stop="onShare">
@@ -53,32 +66,65 @@
 </template>
 
 <script setup>
-import { usePostsStore } from '@/stores/posts'
+import { usePostsStore } from "@/stores/posts";
 
 const props = defineProps({
-  post: { type: Object, required: true }
-})
+  post: { type: Object, required: true },
+});
 
-const postsStore = usePostsStore()
+const postsStore = usePostsStore();
 
 function goDetail() {
-  uni.navigateTo({ url: `/pages/post-detail/index?id=${props.post.id}` })
+  uni.navigateTo({ url: `/pages/post-detail/index?id=${props.post.id}` });
 }
 
 function onLike() {
-  postsStore.toggleLike(props.post.id)
+  postsStore.toggleLike(props.post.id);
 }
 
 function onCollect() {
-  postsStore.toggleCollect(props.post.id)
+  postsStore.toggleCollect(props.post.id);
 }
 
 function onShare() {
-  uni.showToast({ title: '分享功能开发中', icon: 'none' })
+  uni.showToast({ title: "分享功能开发中", icon: "none" });
 }
 </script>
 
 <style scoped>
+.tag {
+  display: inline-block;
+  font-size: 20rpx;
+  border-radius: 8rpx;
+  padding: 2rpx 10rpx;
+  line-height: 1.6;
+}
+
+.tag-anon {
+  background: #fff0ec;
+  color: #ff5a35;
+}
+.tag-orange {
+  background: #fff0ec;
+  color: #ff5a35;
+}
+.tag-blue {
+  background: #eef5ff;
+  color: #3d7ee8;
+}
+.tag-pink {
+  background: #fff0f6;
+  color: #e84393;
+}
+.tag-green {
+  background: #eefaf0;
+  color: #29a84a;
+}
+.tag-gray {
+  background: #f5f5f5;
+  color: #888888;
+}
+
 .post-card {
   margin: 12rpx 24rpx;
   padding: 26rpx 28rpx;
@@ -180,11 +226,22 @@ function onShare() {
   gap: 6rpx;
 }
 
-.post-action.liked .action-num { color: var(--primary); }
-.post-action.collected .action-num { color: #FFAA00; }
+.post-action.liked .action-num {
+  color: var(--primary);
+}
+.post-action.collected .action-num {
+  color: #ffaa00;
+}
 
-.action-icon { font-size: 28rpx; }
-.action-num { font-size: 24rpx; color: var(--text-hint); }
+.action-icon {
+  font-size: 28rpx;
+}
+.action-num {
+  font-size: 24rpx;
+  color: var(--text-hint);
+}
 
-.post-share { margin-left: auto; }
+.post-share {
+  margin-left: auto;
+}
 </style>

@@ -8,13 +8,13 @@
           class="publish-btn"
           :class="{ active: canPublish }"
           @tap="onPublish"
-        >发布</view>
+          >发布</view
+        >
       </view>
     </view>
 
     <scroll-view scroll-y class="scroll-area">
       <view class="form-wrap">
-
         <!-- 标题输入 -->
         <view class="form-item">
           <input
@@ -31,11 +31,7 @@
         <!-- 正文输入 -->
         <view class="form-item">
           <textarea
-            class="content-input"
-            v-model="content"
-            placeholder="分享你的故事、问题或想法...&#10;&#10;（支持 @ 同学，# 话题标签）"
-            :maxlength="2000"
-            auto-height
+            placeholder="分享你的故事、问题或想法...（支持 @ 同学，# 话题标签）"
           />
           <text class="word-count">{{ content.length }}/2000</text>
         </view>
@@ -43,11 +39,7 @@
         <!-- 图片上传 -->
         <view class="img-section">
           <view class="img-list">
-            <view
-              v-for="(img, i) in selectedImages"
-              :key="i"
-              class="img-item"
-            >
+            <view v-for="(img, i) in selectedImages" :key="i" class="img-item">
               <image :src="img" class="preview-img" mode="aspectFill" />
               <view class="img-del" @tap="removeImg(i)">×</view>
             </view>
@@ -109,107 +101,113 @@
             @change="onlyMe = $event.detail.value"
           />
         </view>
-
       </view>
     </scroll-view>
   </view>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
-import { usePostsStore } from '@/stores/posts'
-import { useUserStore } from '@/stores/user'
+import { ref, computed } from "vue";
+import { usePostsStore } from "@/stores/posts";
+import { useUserStore } from "@/stores/user";
 
-const postsStore = usePostsStore()
-const userStore = useUserStore()
+const postsStore = usePostsStore();
+const userStore = useUserStore();
 
-const title = ref('')
-const content = ref('')
-const selectedImages = ref([])
-const selectedTag = ref('')
-const isAnon = ref(false)
-const onlyMe = ref(false)
+const title = ref("");
+const content = ref("");
+const selectedImages = ref([]);
+const selectedTag = ref("");
+const isAnon = ref(false);
+const onlyMe = ref(false);
 
 const availableTags = [
-  { value: 'orange', label: '🍜 美食' },
-  { value: 'blue', label: '📚 学习' },
-  { value: 'pink', label: '💕 表白' },
-  { value: 'green', label: '🌱 资源' },
-  { value: 'gray', label: '😤 吐槽' },
-  { value: 'orange', label: '🎮 娱乐' },
-  { value: 'blue', label: '🏃 运动' },
-  { value: 'gray', label: '🏠 校园生活' },
-]
+  { value: "orange", label: "🍜 美食" },
+  { value: "blue", label: "📚 学习" },
+  { value: "pink", label: "💕 表白" },
+  { value: "green", label: "🌱 资源" },
+  { value: "gray", label: "😤 吐槽" },
+  { value: "orange", label: "🎮 娱乐" },
+  { value: "blue", label: "🏃 运动" },
+  { value: "gray", label: "🏠 校园生活" },
+];
 
 const tagLabelMap = {
-  '🍜 美食': '美食',
-  '📚 学习': '学习',
-  '💕 表白': '表白',
-  '🌱 资源': '资源',
-  '😤 吐槽': '吐槽',
-  '🎮 娱乐': '娱乐',
-  '🏃 运动': '运动',
-  '🏠 校园生活': '校园生活',
-}
+  "🍜 美食": "美食",
+  "📚 学习": "学习",
+  "💕 表白": "表白",
+  "🌱 资源": "资源",
+  "😤 吐槽": "吐槽",
+  "🎮 娱乐": "娱乐",
+  "🏃 运动": "运动",
+  "🏠 校园生活": "校园生活",
+};
 
-const canPublish = computed(() => title.value.trim().length > 0 && content.value.trim().length > 0)
+const canPublish = computed(
+  () => title.value.trim().length > 0 && content.value.trim().length > 0,
+);
 
 function chooseImg() {
   uni.chooseImage({
     count: 9 - selectedImages.value.length,
-    sizeType: ['compressed'],
-    sourceType: ['album', 'camera'],
+    sizeType: ["compressed"],
+    sourceType: ["album", "camera"],
     success: ({ tempFilePaths }) => {
-      selectedImages.value.push(...tempFilePaths)
-    }
-  })
+      selectedImages.value.push(...tempFilePaths);
+    },
+  });
 }
 
 function removeImg(index) {
-  selectedImages.value.splice(index, 1)
+  selectedImages.value.splice(index, 1);
 }
 
 function selectTag(value) {
   // 找到对应的 label
-  const tag = availableTags.find(t => t.value === value)
+  const tag = availableTags.find((t) => t.value === value);
   if (tag) {
-    selectedTag.value = selectedTag.value === tag.label ? '' : tag.label
+    selectedTag.value = selectedTag.value === tag.label ? "" : tag.label;
   }
 }
 
 function onCancel() {
   if (title.value || content.value) {
     uni.showModal({
-      title: '提示',
-      content: '确定放弃编辑吗？',
+      title: "提示",
+      content: "确定放弃编辑吗？",
       success: ({ confirm }) => {
-        if (confirm) uni.navigateBack()
-      }
-    })
+        if (confirm) uni.navigateBack();
+      },
+    });
   } else {
-    uni.navigateBack()
+    uni.navigateBack();
   }
 }
 
 function onPublish() {
-  if (!canPublish.value) return
-  const tagEntry = availableTags.find(t => t.label === selectedTag.value) || { value: 'gray', label: '校园生活' }
+  if (!canPublish.value) return;
+  const tagEntry = availableTags.find((t) => t.label === selectedTag.value) || {
+    value: "gray",
+    label: "校园生活",
+  };
   postsStore.addPost({
     title: title.value.trim(),
     content: content.value.trim(),
     images: selectedImages.value,
-    tag: selectedTag.value ? selectedTag.value.replace(/^.+?\s/, '') : '校园生活',
+    tag: selectedTag.value
+      ? selectedTag.value.replace(/^.+?\s/, "")
+      : "校园生活",
     tagColor: tagEntry.value,
     isAnon: isAnon.value,
-    author: userStore.userInfo?.nickname || '匿名用户',
-    authorAvatar: userStore.userInfo?.avatar || '🍊',
+    author: userStore.userInfo?.nickname || "匿名用户",
+    authorAvatar: userStore.userInfo?.avatar || "🍊",
     authorId: userStore.userInfo?.id || 999,
-    emoji: '',
-  })
-  uni.showToast({ title: '发布成功！', icon: 'success' })
+    emoji: "",
+  });
+  uni.showToast({ title: "发布成功！", icon: "success" });
   setTimeout(() => {
-    uni.switchTab({ url: '/pages/home/index' })
-  }, 800)
+    uni.switchTab({ url: "/pages/home/index" });
+  }, 800);
 }
 </script>
 

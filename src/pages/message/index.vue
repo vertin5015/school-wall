@@ -26,14 +26,18 @@
         >
           <view class="conv-avatar-wrap">
             <view class="conv-avatar">{{ conv.avatar }}</view>
-            <view v-if="conv.unread > 0" class="unread-badge">{{ conv.unread }}</view>
+            <view v-if="conv.unread > 0" class="unread-badge">{{
+              conv.unread
+            }}</view>
           </view>
           <view class="conv-info">
             <view class="conv-top">
               <text class="conv-name">{{ conv.name }}</text>
               <text class="conv-time">{{ conv.lastTime }}</text>
             </view>
-            <text class="conv-last-msg" :class="{ unread: conv.unread > 0 }">{{ conv.lastMsg }}</text>
+            <text class="conv-last-msg" :class="{ unread: conv.unread > 0 }">{{
+              conv.lastMsg
+            }}</text>
           </view>
         </view>
       </view>
@@ -46,19 +50,21 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
-import { mockConversations } from '@/mock/data'
+import { ref } from "vue";
+import { mockConversations } from "@/mock/data";
 
-const conversations = ref([...mockConversations])
+const conversations = ref([...mockConversations]);
 
 function goChat(conv) {
   // 清除未读
-  conv.unread = 0
-  uni.navigateTo({ url: `/pages/message/chat?id=${conv.id}&name=${conv.name}&avatar=${conv.avatar}` })
+  conv.unread = 0;
+  uni.navigateTo({
+    url: `/pages/message/chat?id=${conv.id}&name=${conv.name}&avatar=${conv.avatar}`,
+  });
 }
 
 function newChat() {
-  uni.showToast({ title: '请从帖子详情页发起私信', icon: 'none' })
+  uni.showToast({ title: "请从帖子详情页发起私信", icon: "none" });
 }
 </script>
 
@@ -111,11 +117,17 @@ function newChat() {
   gap: 12rpx;
 }
 
-.search-icon { font-size: 28rpx; }
-.search-placeholder { font-size: 28rpx; color: var(--text-hint); }
+.search-icon {
+  font-size: 28rpx;
+}
+.search-placeholder {
+  font-size: 28rpx;
+  color: var(--text-hint);
+}
 
 /* 会话列表 */
-.conv-list { }
+.conv-list {
+}
 
 .conv-item {
   display: flex;

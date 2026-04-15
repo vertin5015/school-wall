@@ -1,19 +1,12 @@
 <template>
   <view class="detail-page">
-    <!-- 自定义导航 -->
-    <view class="nav-bar">
-      <view class="nav-inner">
-        <view class="back-btn" @tap="goBack">‹ 返回</view>
-        <text class="nav-title">帖子详情</text>
-        <view class="more-btn" @tap="showMore">⋯</view>
-      </view>
-    </view>
-
     <scroll-view scroll-y class="scroll-area">
       <view v-if="post" class="content-wrap">
         <!-- 标签 -->
         <view class="detail-tags">
-          <text class="tag" :class="`tag-${post.tagColor}`">{{ post.tag }}</text>
+          <text class="tag" :class="`tag-${post.tagColor}`">{{
+            post.tag
+          }}</text>
           <text v-if="post.isAnon" class="tag tag-anon">匿名</text>
         </view>
 
@@ -24,7 +17,9 @@
         <view class="author-row">
           <view class="author-avatar">{{ post.authorAvatar }}</view>
           <view class="author-info">
-            <text class="author-name">{{ post.isAnon ? '匿名用户' : post.author }}</text>
+            <text class="author-name">{{
+              post.isAnon ? "匿名用户" : post.author
+            }}</text>
             <text class="author-time">{{ post.fullTime }}</text>
           </view>
           <view class="follow-btn" @tap="onFollow">+ 关注</view>
@@ -50,7 +45,7 @@
         <!-- 点赞/收藏统计 -->
         <view class="stat-row">
           <view class="stat-item" :class="{ active: post.liked }" @tap="onLike">
-            <text class="stat-icon">{{ post.liked ? '❤️' : '🤍' }}</text>
+            <text class="stat-icon">{{ post.liked ? "❤️" : "🤍" }}</text>
             <text class="stat-num">{{ post.likes }} 人觉得有用</text>
           </view>
           <view class="stat-item">
@@ -64,7 +59,9 @@
 
         <!-- 评论区 -->
         <view class="comments-section">
-          <text class="comments-title">💬 全部评论 {{ post.commentCount }}</text>
+          <text class="comments-title"
+            >💬 全部评论 {{ post.commentCount }}</text
+          >
 
           <view v-if="post.comments.length === 0" class="no-comment">
             <text>还没有评论，来抢沙发吧 🛋️</text>
@@ -86,7 +83,9 @@
               <view class="comment-footer">
                 <text class="comment-time">{{ comment.time }}</text>
                 <view class="comment-like" @tap="likeComment(comment)">
-                  <text class="comment-like-icon">{{ comment.liked ? '❤️' : '🤍' }}</text>
+                  <text class="comment-like-icon">{{
+                    comment.liked ? "❤️" : "🤍"
+                  }}</text>
                   <text class="comment-like-num">{{ comment.likes }}</text>
                 </view>
               </view>
@@ -94,7 +93,7 @@
           </view>
         </view>
 
-        <view style="height: 120rpx;"></view>
+        <view style="height: 120rpx"></view>
       </view>
 
       <view v-else class="loading-wrap">
@@ -109,11 +108,15 @@
       </view>
       <view class="action-btns">
         <view class="action-btn" :class="{ liked: post.liked }" @tap="onLike">
-          <text class="action-btn-icon">{{ post.liked ? '❤️' : '🤍' }}</text>
+          <text class="action-btn-icon">{{ post.liked ? "❤️" : "🤍" }}</text>
           <text class="action-btn-num">{{ post.likes }}</text>
         </view>
-        <view class="action-btn" :class="{ collected: post.collected }" @tap="onCollect">
-          <text class="action-btn-icon">{{ post.collected ? '⭐' : '☆' }}</text>
+        <view
+          class="action-btn"
+          :class="{ collected: post.collected }"
+          @tap="onCollect"
+        >
+          <text class="action-btn-icon">{{ post.collected ? "⭐" : "☆" }}</text>
         </view>
         <view class="action-btn" @tap="onShare">
           <text class="action-btn-icon">↗</text>
@@ -133,7 +136,13 @@
         />
         <view class="comment-popup-footer">
           <text class="word-count">{{ commentText.length }}/200</text>
-          <button class="submit-btn" :disabled="!commentText.trim()" @tap="submitComment">发送</button>
+          <button
+            class="submit-btn"
+            :disabled="!commentText.trim()"
+            @tap="submitComment"
+          >
+            发送
+          </button>
         </view>
       </view>
     </view>
@@ -141,82 +150,93 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
-import { usePostsStore } from '@/stores/posts'
-import { useUserStore } from '@/stores/user'
+import { ref, computed, onMounted } from "vue";
+import { onLoad } from "@dcloudio/uni-app";
+import { usePostsStore } from "@/stores/posts";
+import { useUserStore } from "@/stores/user";
 
-const postsStore = usePostsStore()
-const userStore = useUserStore()
+const postsStore = usePostsStore();
+const userStore = useUserStore();
 
-// 获取页面参数
-const pages = getCurrentPages()
-const currentPage = pages[pages.length - 1]
-const postId = Number(currentPage?.options?.id || 0)
+// 使用响应式的 postId
+const postId = ref(0);
 
-const post = computed(() => postsStore.getPostById(postId))
+// ✅ 在 onLoad 中安全地获取路由参数
+onLoad((options) => {
+  if (options.id) {
+    postId.value = Number(options.id);
+  }
+});
 
-const showCommentInput = ref(false)
-const commentText = ref('')
+// 让 post 依赖响应式的 postId.value
+const post = computed(() => postsStore.getPostById(postId.value));
+
+const showCommentInput = ref(false);
+const commentText = ref("");
 
 function goBack() {
-  uni.navigateBack()
+  uni.navigateBack();
 }
 
 function showMore() {
   uni.showActionSheet({
-    itemList: ['复制链接', '举报', '不感兴趣'],
+    itemList: ["复制链接", "举报", "不感兴趣"],
     success: ({ tapIndex }) => {
-      if (tapIndex === 0) uni.showToast({ title: '链接已复制', icon: 'none' })
-      if (tapIndex === 1) uni.showToast({ title: '已举报，感谢反馈', icon: 'none' })
-    }
-  })
+      if (tapIndex === 0) uni.showToast({ title: "链接已复制", icon: "none" });
+      if (tapIndex === 1)
+        uni.showToast({ title: "已举报，感谢反馈", icon: "none" });
+    },
+  });
 }
 
 function onLike() {
-  postsStore.toggleLike(postId)
+  postsStore.toggleLike(postId);
 }
 
 function onCollect() {
-  postsStore.toggleCollect(postId)
+  postsStore.toggleCollect(postId);
 }
 
 function onShare() {
-  uni.showToast({ title: '分享功能开发中', icon: 'none' })
+  uni.showToast({ title: "分享功能开发中", icon: "none" });
 }
 
 function onFollow() {
-  uni.showToast({ title: '已关注', icon: 'success' })
+  uni.showToast({ title: "已关注", icon: "success" });
 }
 
 function previewImg(index) {
-  if (!post.value?.images?.length) return
-  uni.previewImage({ current: post.value.images[index], urls: post.value.images })
+  if (!post.value?.images?.length) return;
+  uni.previewImage({
+    current: post.value.images[index],
+    urls: post.value.images,
+  });
 }
 
 function focusInput() {
-  showCommentInput.value = true
+  showCommentInput.value = true;
 }
 
 function hideInput() {
-  showCommentInput.value = false
-  commentText.value = ''
+  showCommentInput.value = false;
+  commentText.value = "";
 }
 
 function submitComment() {
-  if (!commentText.value.trim()) return
+  if (!commentText.value.trim()) return;
   postsStore.addComment(postId, {
-    author: userStore.userInfo?.nickname || '我',
-    avatar: userStore.userInfo?.avatar || '🍊',
+    author: userStore.userInfo?.nickname || "我",
+    avatar: userStore.userInfo?.avatar || "🍊",
     content: commentText.value.trim(),
-  })
-  commentText.value = ''
-  showCommentInput.value = false
-  uni.showToast({ title: '评论成功', icon: 'success' })
+  });
+  commentText.value = "";
+  showCommentInput.value = false;
+  uni.showToast({ title: "评论成功", icon: "success" });
 }
 
 function likeComment(comment) {
-  comment.liked = !comment.liked
-  comment.likes += comment.liked ? 1 : -1
+  comment.liked = !comment.liked;
+  comment.likes += comment.liked ? 1 : -1;
 }
 </script>
 
@@ -387,10 +407,17 @@ function likeComment(comment) {
   gap: 8rpx;
 }
 
-.stat-item.active .stat-num { color: var(--primary); }
+.stat-item.active .stat-num {
+  color: var(--primary);
+}
 
-.stat-icon { font-size: 28rpx; }
-.stat-num { font-size: 24rpx; color: var(--text-hint); }
+.stat-icon {
+  font-size: 28rpx;
+}
+.stat-num {
+  font-size: 24rpx;
+  color: var(--text-hint);
+}
 
 /* 分割线 */
 .divider {
@@ -493,8 +520,13 @@ function likeComment(comment) {
   gap: 4rpx;
 }
 
-.comment-like-icon { font-size: 22rpx; }
-.comment-like-num { font-size: 22rpx; color: var(--text-hint); }
+.comment-like-icon {
+  font-size: 22rpx;
+}
+.comment-like-num {
+  font-size: 22rpx;
+  color: var(--text-hint);
+}
 
 /* 底部操作栏 */
 .action-bar {
@@ -538,9 +570,15 @@ function likeComment(comment) {
   gap: 2rpx;
 }
 
-.action-btn.liked .action-btn-icon { }
-.action-btn-icon { font-size: 32rpx; }
-.action-btn-num { font-size: 18rpx; color: var(--text-hint); }
+.action-btn.liked .action-btn-icon {
+}
+.action-btn-icon {
+  font-size: 32rpx;
+}
+.action-btn-num {
+  font-size: 18rpx;
+  color: var(--text-hint);
+}
 
 /* 评论输入弹窗 */
 .comment-popup {
@@ -592,7 +630,9 @@ function likeComment(comment) {
   border: none !important;
 }
 
-.submit-btn::after { border: none; }
+.submit-btn::after {
+  border: none;
+}
 
 .submit-btn[disabled] {
   background: #ddd !important;

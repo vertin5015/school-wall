@@ -34,17 +34,22 @@
           <view v-if="!msg.fromMe" class="chat-avatar">{{ chatAvatar }}</view>
 
           <view class="bubble-wrap">
-            <view class="bubble" :class="msg.fromMe ? 'bubble-me' : 'bubble-other'">
+            <view
+              class="bubble"
+              :class="msg.fromMe ? 'bubble-me' : 'bubble-other'"
+            >
               <text class="bubble-text">{{ msg.content }}</text>
             </view>
             <text class="msg-time">{{ msg.time }}</text>
           </view>
 
           <!-- 自己头像 -->
-          <view v-if="msg.fromMe" class="chat-avatar chat-avatar-me">{{ myAvatar }}</view>
+          <view v-if="msg.fromMe" class="chat-avatar chat-avatar-me">{{
+            myAvatar
+          }}</view>
         </view>
 
-        <view style="height: 20rpx;" id="listBottom"></view>
+        <view style="height: 20rpx" id="listBottom"></view>
       </view>
     </scroll-view>
 
@@ -68,98 +73,114 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, nextTick } from 'vue'
-import { mockConversations, mockUser } from '@/mock/data'
+import { ref, computed, onMounted, nextTick } from "vue";
+import { mockConversations, mockUser } from "@/mock/data";
 
-const pages = getCurrentPages()
-const currentPage = pages[pages.length - 1]
-const chatId = Number(currentPage?.options?.id || 1)
-const chatName = decodeURIComponent(currentPage?.options?.name || '用户')
-const chatAvatar = decodeURIComponent(currentPage?.options?.avatar || '👤')
+const pages = getCurrentPages();
+const currentPage = pages[pages.length - 1];
+const chatId = Number(currentPage?.options?.id || 1);
+const chatName = decodeURIComponent(currentPage?.options?.name || "用户");
+const chatAvatar = decodeURIComponent(currentPage?.options?.avatar || "👤");
 
-const myAvatar = mockUser.avatar
+const myAvatar = mockUser.avatar;
 
-const conv = mockConversations.find(c => c.id === chatId)
-const messages = ref(conv ? [...conv.messages] : [])
+const conv = mockConversations.find((c) => c.id === chatId);
+const messages = ref(conv ? [...conv.messages] : []);
 
-const inputText = ref('')
-const scrollTop = ref(99999)
-const lastMsgId = ref('')
+const inputText = ref("");
+const scrollTop = ref(99999);
+const lastMsgId = ref("");
 
-const today = new Date().toLocaleDateString('zh-CN', { month: 'long', day: 'numeric' })
+const today = new Date().toLocaleDateString("zh-CN", {
+  month: "long",
+  day: "numeric",
+});
 
 onMounted(() => {
-  scrollToBottom()
-})
+  scrollToBottom();
+});
 
 function scrollToBottom() {
   nextTick(() => {
     if (messages.value.length > 0) {
-      lastMsgId.value = `msg-${messages.value[messages.value.length - 1].id}`
+      lastMsgId.value = `msg-${messages.value[messages.value.length - 1].id}`;
     }
-    scrollTop.value = 999999
-  })
+    scrollTop.value = 999999;
+  });
 }
 
 function sendMsg() {
-  if (!inputText.value.trim()) return
+  if (!inputText.value.trim()) return;
   const newMsg = {
     id: Date.now(),
     fromMe: true,
     content: inputText.value.trim(),
-    time: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }),
-  }
-  messages.value.push(newMsg)
-  inputText.value = ''
-  scrollToBottom()
+    time: new Date().toLocaleTimeString("zh-CN", {
+      hour: "2-digit",
+      minute: "2-digit",
+    }),
+  };
+  messages.value.push(newMsg);
+  inputText.value = "";
+  scrollToBottom();
 
   // 模拟对方回复
   setTimeout(() => {
-    const replies = ['好的！', '哈哈😄', '收到~', '明白了', '好的好的', '谢谢！']
+    const replies = [
+      "好的！",
+      "哈哈😄",
+      "收到~",
+      "明白了",
+      "好的好的",
+      "谢谢！",
+    ];
     messages.value.push({
       id: Date.now() + 1,
       fromMe: false,
       content: replies[Math.floor(Math.random() * replies.length)],
-      time: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }),
-    })
-    scrollToBottom()
-  }, 1000)
+      time: new Date().toLocaleTimeString("zh-CN", {
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
+    });
+    scrollToBottom();
+  }, 1000);
 }
 
 function goBack() {
-  uni.navigateBack()
+  uni.navigateBack();
 }
 
 function showMore() {
   uni.showActionSheet({
-    itemList: ['查看对方主页', '投诉/举报', '清空聊天记录'],
+    itemList: ["查看对方主页", "投诉/举报", "清空聊天记录"],
     success: ({ tapIndex }) => {
       if (tapIndex === 2) {
         uni.showModal({
-          title: '提示',
-          content: '确定清空聊天记录吗？',
+          title: "提示",
+          content: "确定清空聊天记录吗？",
           success: ({ confirm }) => {
-            if (confirm) messages.value = []
-          }
-        })
+            if (confirm) messages.value = [];
+          },
+        });
       }
-    }
-  })
+    },
+  });
 }
 
 function toggleExtra() {
-  uni.showToast({ title: '更多功能开发中', icon: 'none' })
+  uni.showToast({ title: "更多功能开发中", icon: "none" });
 }
 
 function showEmoji() {
-  uni.showToast({ title: 'emoji 开发中', icon: 'none' })
+  uni.showToast({ title: "emoji 开发中", icon: "none" });
 }
 </script>
 
 <style scoped>
 .chat-page {
   min-height: 100vh;
-  background: #F5F5F0;
+  background: #f5f5f0;
   display: flex;
   flex-direction: column;
 }
@@ -215,7 +236,7 @@ function showEmoji() {
   text-align: center;
   font-size: 22rpx;
   color: var(--text-hint);
-  background: rgba(0,0,0,0.06);
+  background: rgba(0, 0, 0, 0.06);
   border-radius: 100rpx;
   padding: 6rpx 24rpx;
   display: inline-block;
@@ -282,8 +303,12 @@ function showEmoji() {
   display: block;
 }
 
-.bubble-other .bubble-text { color: var(--text-main); }
-.bubble-me .bubble-text { color: #ffffff; }
+.bubble-other .bubble-text {
+  color: var(--text-main);
+}
+.bubble-me .bubble-text {
+  color: #ffffff;
+}
 
 .msg-time {
   font-size: 20rpx;

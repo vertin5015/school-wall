@@ -1,7 +1,6 @@
 <template>
   <view class="profile-page">
     <scroll-view scroll-y class="scroll-area">
-
       <!-- 头部用户信息卡片 -->
       <view class="profile-header">
         <view class="header-bg"></view>
@@ -16,7 +15,9 @@
               <view class="edit-btn" @tap="editProfile">编辑资料</view>
             </view>
             <text class="user-school">{{ userInfo.school }}</text>
-            <text class="user-bio">{{ userInfo.bio || '这个人很懒，什么都没写~' }}</text>
+            <text class="user-bio">{{
+              userInfo.bio || "这个人很懒，什么都没写~"
+            }}</text>
           </view>
         </view>
 
@@ -45,12 +46,14 @@
           class="ptab"
           :class="{ active: activeTab === 'posts' }"
           @tap="activeTab = 'posts'"
-        >我的帖子</view>
+          >我的帖子</view
+        >
         <view
           class="ptab"
           :class="{ active: activeTab === 'collect' }"
           @tap="activeTab = 'collect'"
-        >我的收藏</view>
+          >我的收藏</view
+        >
       </view>
 
       <!-- 帖子列表 -->
@@ -75,7 +78,12 @@
       <view class="settings-section">
         <text class="settings-title">设置</text>
         <view class="settings-list">
-          <view class="settings-item" v-for="item in settingItems" :key="item.label" @tap="item.action">
+          <view
+            class="settings-item"
+            v-for="item in settingItems"
+            :key="item.label"
+            @tap="item.action"
+          >
             <text class="settings-icon">{{ item.icon }}</text>
             <text class="settings-label">{{ item.label }}</text>
             <text class="settings-arrow">›</text>
@@ -88,11 +96,15 @@
         <view class="logout-btn" @tap="onLogout">退出登录</view>
       </view>
 
-      <view style="height: 40rpx;"></view>
+      <view style="height: 40rpx"></view>
     </scroll-view>
 
     <!-- 编辑资料弹窗 -->
-    <view v-if="showEditModal" class="modal-mask" @tap.self="showEditModal = false">
+    <view
+      v-if="showEditModal"
+      class="modal-mask"
+      @tap.self="showEditModal = false"
+    >
       <view class="modal-wrap">
         <view class="modal-header">
           <text class="modal-title">编辑资料</text>
@@ -101,15 +113,30 @@
         <view class="modal-form">
           <view class="modal-field">
             <text class="field-label">昵称</text>
-            <input class="field-input" v-model="editForm.nickname" placeholder="输入昵称" :maxlength="20" />
+            <input
+              class="field-input"
+              v-model="editForm.nickname"
+              placeholder="输入昵称"
+              :maxlength="20"
+            />
           </view>
           <view class="modal-field">
             <text class="field-label">学校</text>
-            <input class="field-input" v-model="editForm.school" placeholder="输入学校名称" :maxlength="30" />
+            <input
+              class="field-input"
+              v-model="editForm.school"
+              placeholder="输入学校名称"
+              :maxlength="30"
+            />
           </view>
           <view class="modal-field">
             <text class="field-label">简介</text>
-            <textarea class="field-textarea" v-model="editForm.bio" placeholder="介绍一下自己..." :maxlength="100" />
+            <textarea
+              class="field-textarea"
+              v-model="editForm.bio"
+              placeholder="介绍一下自己..."
+              :maxlength="100"
+            />
           </view>
         </view>
         <view class="modal-footer">
@@ -122,89 +149,89 @@
 </template>
 
 <script setup>
-import { ref, computed, reactive } from 'vue'
-import { useUserStore } from '@/stores/user'
-import { usePostsStore } from '@/stores/posts'
-import PostCard from '@/components/PostCard.vue'
+import { ref, computed, reactive } from "vue";
+import { useUserStore } from "@/stores/user";
+import { usePostsStore } from "@/stores/posts";
+import PostCard from "@/components/PostCard.vue";
 
-const userStore = useUserStore()
-const postsStore = usePostsStore()
+const userStore = useUserStore();
+const postsStore = usePostsStore();
 
-const userInfo = computed(() => userStore.userInfo || {})
-const activeTab = ref('posts')
-const showEditModal = ref(false)
+const userInfo = computed(() => userStore.userInfo || {});
+const activeTab = ref("posts");
+const showEditModal = ref(false);
 
 const editForm = reactive({
-  nickname: '',
-  school: '',
-  bio: '',
-})
+  nickname: "",
+  school: "",
+  bio: "",
+});
 
 const myPosts = computed(() =>
-  postsStore.postList.filter(p => p.authorId === userInfo.value.id)
-)
+  postsStore.postList.filter((p) => p.authorId === userInfo.value.id),
+);
 
 const collectedPosts = computed(() =>
-  postsStore.postList.filter(p => p.collected)
-)
+  postsStore.postList.filter((p) => p.collected),
+);
 
 const settingItems = [
-  { icon: '🔔', label: '消息通知设置', action: () => toast('开发中') },
-  { icon: '🔒', label: '隐私设置', action: () => toast('开发中') },
-  { icon: '🎨', label: '外观设置', action: () => toast('开发中') },
-  { icon: '❓', label: '帮助与反馈', action: () => toast('开发中') },
-  { icon: '📋', label: '用户协议', action: () => toast('开发中') },
-  { icon: 'ℹ️', label: '关于校园墙', action: () => toast('v1.0.0') },
-]
+  { icon: "🔔", label: "消息通知设置", action: () => toast("开发中") },
+  { icon: "🔒", label: "隐私设置", action: () => toast("开发中") },
+  { icon: "🎨", label: "外观设置", action: () => toast("开发中") },
+  { icon: "❓", label: "帮助与反馈", action: () => toast("开发中") },
+  { icon: "📋", label: "用户协议", action: () => toast("开发中") },
+  { icon: "ℹ️", label: "关于校园墙", action: () => toast("v1.0.0") },
+];
 
 function toast(msg) {
-  uni.showToast({ title: msg, icon: 'none' })
+  uni.showToast({ title: msg, icon: "none" });
 }
 
 function goMyPosts() {
-  activeTab.value = 'posts'
+  activeTab.value = "posts";
 }
 
 function goPublish() {
-  uni.navigateTo({ url: '/pages/publish/index' })
+  uni.navigateTo({ url: "/pages/publish/index" });
 }
 
 function changeAvatar() {
   uni.chooseImage({
     count: 1,
-    sizeType: ['compressed'],
-    sourceType: ['album', 'camera'],
+    sizeType: ["compressed"],
+    sourceType: ["album", "camera"],
     success: ({ tempFilePaths }) => {
-      userStore.updateProfile({ avatar: tempFilePaths[0] })
-      uni.showToast({ title: '头像已更新', icon: 'success' })
-    }
-  })
+      userStore.updateProfile({ avatar: tempFilePaths[0] });
+      uni.showToast({ title: "头像已更新", icon: "success" });
+    },
+  });
 }
 
 function editProfile() {
-  editForm.nickname = userInfo.value.nickname || ''
-  editForm.school = userInfo.value.school || ''
-  editForm.bio = userInfo.value.bio || ''
-  showEditModal.value = true
+  editForm.nickname = userInfo.value.nickname || "";
+  editForm.school = userInfo.value.school || "";
+  editForm.bio = userInfo.value.bio || "";
+  showEditModal.value = true;
 }
 
 function saveProfile() {
-  userStore.updateProfile({ ...editForm })
-  showEditModal.value = false
-  uni.showToast({ title: '保存成功', icon: 'success' })
+  userStore.updateProfile({ ...editForm });
+  showEditModal.value = false;
+  uni.showToast({ title: "保存成功", icon: "success" });
 }
 
 function onLogout() {
   uni.showModal({
-    title: '提示',
-    content: '确定退出登录吗？',
+    title: "提示",
+    content: "确定退出登录吗？",
     success: ({ confirm }) => {
       if (confirm) {
-        userStore.logout()
-        uni.reLaunch({ url: '/pages/login/index' })
+        userStore.logout();
+        uni.reLaunch({ url: "/pages/login/index" });
       }
-    }
-  })
+    },
+  });
 }
 </script>
 
@@ -232,7 +259,7 @@ function onLogout() {
   left: 0;
   right: 0;
   height: 240rpx;
-  background: linear-gradient(160deg, #FF5A35 0%, #FF9060 100%);
+  background: linear-gradient(160deg, #ff5a35 0%, #ff9060 100%);
 }
 
 .header-content {
@@ -258,7 +285,7 @@ function onLogout() {
   align-items: center;
   justify-content: center;
   font-size: 64rpx;
-  box-shadow: 0 4rpx 16rpx rgba(0,0,0,0.12);
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.12);
 }
 
 .avatar-edit-badge {
@@ -388,8 +415,13 @@ function onLogout() {
   gap: 16rpx;
 }
 
-.empty-emoji { font-size: 64rpx; }
-.empty-text { font-size: 28rpx; color: var(--text-hint); }
+.empty-emoji {
+  font-size: 64rpx;
+}
+.empty-text {
+  font-size: 28rpx;
+  color: var(--text-hint);
+}
 .empty-btn {
   margin-top: 8rpx;
   background: var(--primary);
@@ -413,7 +445,8 @@ function onLogout() {
   display: block;
 }
 
-.settings-list { }
+.settings-list {
+}
 
 .settings-item {
   display: flex;
@@ -423,11 +456,24 @@ function onLogout() {
   gap: 20rpx;
 }
 
-.settings-item:last-child { border-bottom: none; }
+.settings-item:last-child {
+  border-bottom: none;
+}
 
-.settings-icon { font-size: 32rpx; width: 40rpx; text-align: center; }
-.settings-label { flex: 1; font-size: 30rpx; color: var(--text-main); }
-.settings-arrow { font-size: 32rpx; color: var(--text-hint); }
+.settings-icon {
+  font-size: 32rpx;
+  width: 40rpx;
+  text-align: center;
+}
+.settings-label {
+  flex: 1;
+  font-size: 30rpx;
+  color: var(--text-main);
+}
+.settings-arrow {
+  font-size: 32rpx;
+  color: var(--text-hint);
+}
 
 /* 退出登录 */
 .logout-wrap {
@@ -443,8 +489,8 @@ function onLogout() {
   align-items: center;
   justify-content: center;
   font-size: 30rpx;
-  color: #FF3B30;
-  border: 1rpx solid #FFCDD0;
+  color: #ff3b30;
+  border: 1rpx solid #ffcdd0;
 }
 
 /* 编辑弹窗 */

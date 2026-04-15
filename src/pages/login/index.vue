@@ -35,32 +35,30 @@
         <text v-else>登录中...</text>
       </button>
 
-      <text class="login-tip">
-        登录即代表同意《用户协议》和《隐私政策》
-      </text>
+      <text class="login-tip"> 登录即代表同意《用户协议》和《隐私政策》 </text>
       <text class="login-tip school-tip">仅本校学生可使用本应用</text>
     </view>
   </view>
 </template>
 
 <script setup>
-import { ref } from 'vue'
-import { useUserStore } from '@/stores/user'
+import { ref } from "vue";
+import { useUserStore } from "@/stores/user";
 
-const userStore = useUserStore()
-const loading = ref(false)
+const userStore = useUserStore();
+const loading = ref(false);
 
 async function handleWxLogin() {
-  if (loading.value) return
-  loading.value = true
+  if (loading.value) return;
+  loading.value = true;
   try {
-    await userStore.wxLogin()
+    await userStore.wxLogin();
     // 登录成功，跳转到首页（switchTab 适配底部Tab场景）
-    uni.switchTab({ url: '/pages/home/index' })
+    uni.switchTab({ url: "/pages/home/index" });
   } catch (e) {
-    uni.showToast({ title: '登录失败，请重试', icon: 'none' })
+    uni.showToast({ title: "登录失败，请重试", icon: "none" });
   } finally {
-    loading.value = false
+    loading.value = false;
   }
 }
 </script>
@@ -76,7 +74,7 @@ async function handleWxLogin() {
 /* ---- 品牌区域 ---- */
 .login-hero {
   flex: 1;
-  background: linear-gradient(160deg, #FF5A35 0%, #FF7A55 55%, #FFB49A 100%);
+  background: linear-gradient(160deg, #ff5a35 0%, #ff7a55 55%, #ffb49a 100%);
   padding: 100rpx 48rpx 72rpx;
   display: flex;
   flex-direction: column;
@@ -149,7 +147,7 @@ async function handleWxLogin() {
 .wx-login-btn {
   width: 100%;
   height: 96rpx;
-  background: #07C160 !important;
+  background: #07c160 !important;
   color: #ffffff !important;
   border-radius: 200rpx !important;
   font-size: 32rpx !important;
