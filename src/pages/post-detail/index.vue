@@ -241,6 +241,39 @@ function likeComment(comment) {
 </script>
 
 <style scoped>
+.tag {
+  display: inline-block;
+  font-size: 20rpx;
+  border-radius: 8rpx;
+  padding: 2rpx 10rpx;
+  line-height: 1.6;
+}
+
+.tag-anon {
+  background: #fff0ec;
+  color: #ff5a35;
+}
+.tag-orange {
+  background: #fff0ec;
+  color: #ff5a35;
+}
+.tag-blue {
+  background: #eef5ff;
+  color: #3d7ee8;
+}
+.tag-pink {
+  background: #fff0f6;
+  color: #e84393;
+}
+.tag-green {
+  background: #eefaf0;
+  color: #29a84a;
+}
+.tag-gray {
+  background: #f5f5f5;
+  color: #888888;
+}
+
 .detail-page {
   min-height: 100vh;
   background: #ffffff;

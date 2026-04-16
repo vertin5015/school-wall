@@ -1,18 +1,22 @@
 <template>
   <view class="msg-page">
-    <view class="nav-bar">
+    <!-- <view class="nav-bar">
       <view class="nav-inner">
         <text class="nav-title">私信</text>
         <view class="nav-icon-btn" @tap="newChat">✏️</view>
       </view>
-    </view>
+    </view> -->
 
     <scroll-view scroll-y class="scroll-area">
       <!-- 搜索框 -->
       <view class="search-wrap">
         <view class="search-box">
           <text class="search-icon">🔍</text>
-          <text class="search-placeholder">搜索</text>
+          <input
+            class="search-input"
+            placeholder="搜索联系人或聊天记录"
+            placeholder-class="ph-color"
+          />
         </view>
       </view>
 
@@ -22,12 +26,13 @@
           v-for="conv in conversations"
           :key="conv.id"
           class="conv-item"
+          hover-class="conv-item-hover"
           @tap="goChat(conv)"
         >
           <view class="conv-avatar-wrap">
             <view class="conv-avatar">{{ conv.avatar }}</view>
             <view v-if="conv.unread > 0" class="unread-badge">{{
-              conv.unread
+              conv.unread > 99 ? "99+" : conv.unread
             }}</view>
           </view>
           <view class="conv-info">
@@ -35,15 +40,19 @@
               <text class="conv-name">{{ conv.name }}</text>
               <text class="conv-time">{{ conv.lastTime }}</text>
             </view>
-            <text class="conv-last-msg" :class="{ unread: conv.unread > 0 }">{{
-              conv.lastMsg
-            }}</text>
+            <view class="conv-bottom">
+              <text
+                class="conv-last-msg"
+                :class="{ unread: conv.unread > 0 }"
+                >{{ conv.lastMsg }}</text
+              >
+            </view>
           </view>
         </view>
       </view>
 
       <view class="list-tip">
-        <text class="list-tip-text">— 只展示最近的私信 —</text>
+        <text class="list-tip-text">— 仅展示最近 30 天的私信 —</text>
       </view>
     </scroll-view>
   </view>
@@ -59,7 +68,7 @@ function goChat(conv) {
   // 清除未读
   conv.unread = 0;
   uni.navigateTo({
-    url: `/pages/message/chat?id=${conv.id}&name=${conv.name}&avatar=${conv.avatar}`,
+    url: `/pages/message/chat?id=${conv.id}&name=${encodeURIComponent(conv.name)}&avatar=${encodeURIComponent(conv.avatar)}`,
   });
 }
 
@@ -78,25 +87,35 @@ function newChat() {
 
 .nav-bar {
   background: #ffffff;
-  border-bottom: 1rpx solid var(--border);
   padding-top: var(--status-bar-height, 44px);
+  position: sticky;
+  top: 0;
+  z-index: 100;
 }
 
 .nav-inner {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16rpx 32rpx;
+  padding: 20rpx 32rpx;
 }
 
 .nav-title {
-  font-size: 36rpx;
+  font-size: 40rpx;
   font-weight: 800;
   color: var(--text-main);
+  letter-spacing: 1rpx;
 }
 
 .nav-icon-btn {
-  font-size: 36rpx;
+  width: 72rpx;
+  height: 72rpx;
+  border-radius: 50%;
+  background: var(--bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32rpx;
 }
 
 .scroll-area {
@@ -105,37 +124,51 @@ function newChat() {
 
 /* 搜索框 */
 .search-wrap {
-  padding: 20rpx 24rpx;
+  padding: 16rpx 32rpx 24rpx;
 }
 
 .search-box {
   background: var(--bg);
-  border-radius: 100rpx;
-  padding: 16rpx 28rpx;
+  border-radius: 20rpx;
+  padding: 0 24rpx;
+  height: 80rpx;
   display: flex;
   align-items: center;
-  gap: 12rpx;
+  gap: 16rpx;
 }
 
 .search-icon {
-  font-size: 28rpx;
+  font-size: 30rpx;
+  color: var(--text-hint);
 }
-.search-placeholder {
+
+.search-input {
+  flex: 1;
   font-size: 28rpx;
+  color: var(--text-main);
+}
+
+.ph-color {
   color: var(--text-hint);
 }
 
 /* 会话列表 */
 .conv-list {
+  padding: 0 8rpx;
 }
 
 .conv-item {
   display: flex;
   align-items: center;
-  padding: 24rpx 32rpx;
-  gap: 22rpx;
-  border-bottom: 1rpx solid var(--border);
-  position: relative;
+  padding: 28rpx 24rpx;
+  gap: 24rpx;
+  transition: background-color 0.2s;
+  border-radius: 24rpx;
+  margin: 0 16rpx 4rpx;
+}
+
+.conv-item-hover {
+  background-color: #f9f9f9;
 }
 
 .conv-avatar-wrap {
@@ -144,32 +177,33 @@ function newChat() {
 }
 
 .conv-avatar {
-  width: 96rpx;
-  height: 96rpx;
-  border-radius: 50%;
-  background: #f5f5f0;
+  width: 108rpx;
+  height: 108rpx;
+  border-radius: 36rpx;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 48rpx;
+  font-size: 52rpx;
+  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.05);
 }
 
 .unread-badge {
   position: absolute;
-  top: -4rpx;
-  right: -4rpx;
+  top: -8rpx;
+  right: -8rpx;
   min-width: 36rpx;
   height: 36rpx;
-  background: var(--primary);
-  border-radius: 100rpx;
+  background: #ff4d4f;
+  border-radius: 18rpx;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 20rpx;
   color: #fff;
-  font-weight: 600;
-  padding: 0 6rpx;
-  border: 2rpx solid #fff;
+  font-weight: bold;
+  padding: 0 8rpx;
+  border: 4rpx solid #fff;
 }
 
 .conv-info {
@@ -181,12 +215,12 @@ function newChat() {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 6rpx;
+  margin-bottom: 8rpx;
 }
 
 .conv-name {
-  font-size: 30rpx;
-  font-weight: 600;
+  font-size: 32rpx;
+  font-weight: 700;
   color: var(--text-main);
 }
 
@@ -195,26 +229,33 @@ function newChat() {
   color: var(--text-hint);
 }
 
+.conv-bottom {
+  display: flex;
+  align-items: center;
+}
+
 .conv-last-msg {
   font-size: 26rpx;
-  color: var(--text-hint);
+  color: var(--text-sub);
+  white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
-  display: block;
+  flex: 1;
 }
 
 .conv-last-msg.unread {
-  color: var(--text-sub);
+  color: var(--text-main);
   font-weight: 500;
 }
 
 .list-tip {
   text-align: center;
-  padding: 40rpx 0;
+  padding: 60rpx 0 80rpx;
 }
+
 .list-tip-text {
-  font-size: 24rpx;
+  font-size: 22rpx;
   color: var(--text-hint);
+  letter-spacing: 2rpx;
 }
 </style>

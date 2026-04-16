@@ -3,7 +3,7 @@
     <!-- 上部分：品牌区域 -->
     <view class="login-hero">
       <view class="login-logo">🏫</view>
-      <text class="login-title">校园墙</text>
+      <text class="login-title">校园微墙</text>
       <text class="login-sub">你的校园匿名树洞</text>
 
       <view class="login-features">

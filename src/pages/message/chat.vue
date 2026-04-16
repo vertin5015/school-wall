@@ -3,9 +3,12 @@
     <!-- 导航栏 -->
     <view class="nav-bar">
       <view class="nav-inner">
-        <view class="back-btn" @tap="goBack">‹ 返回</view>
+        <!-- <view class="back-btn" @tap="goBack">
+           <text class="back-icon">‹</text>
+        </view> -->
         <view class="nav-center">
           <text class="nav-name">{{ chatName }}</text>
+          <text class="nav-status">在线</text>
         </view>
         <view class="nav-more" @tap="showMore">⋯</view>
       </view>
@@ -18,9 +21,8 @@
       :scroll-top="scrollTop"
       :scroll-into-view="lastMsgId"
       scroll-with-animation
-      id="msgList"
     >
-      <view class="msg-list" id="msgListInner">
+      <view class="msg-list">
         <view class="chat-date-tip">{{ today }}</view>
 
         <view
@@ -31,7 +33,9 @@
           :id="`msg-${msg.id}`"
         >
           <!-- 对方头像 -->
-          <view v-if="!msg.fromMe" class="chat-avatar">{{ chatAvatar }}</view>
+          <view v-if="!msg.fromMe" class="chat-avatar-wrap">
+            <view class="chat-avatar">{{ chatAvatar }}</view>
+          </view>
 
           <view class="bubble-wrap">
             <view
@@ -44,30 +48,38 @@
           </view>
 
           <!-- 自己头像 -->
-          <view v-if="msg.fromMe" class="chat-avatar chat-avatar-me">{{
-            myAvatar
-          }}</view>
+          <view v-if="msg.fromMe" class="chat-avatar-wrap">
+            <view class="chat-avatar chat-avatar-me">{{ myAvatar }}</view>
+          </view>
         </view>
 
-        <view style="height: 20rpx" id="listBottom"></view>
+        <view style="height: 40rpx"></view>
       </view>
     </scroll-view>
 
     <!-- 输入栏 -->
     <view class="input-bar safe-area-bottom">
-      <view class="input-extra-btn" @tap="toggleExtra">＋</view>
+      <view class="input-extra-btn" @tap="toggleExtra">
+        <text class="icon">＋</text>
+      </view>
       <view class="input-wrap">
-        <input
+        <textarea
           class="chat-input"
           v-model="inputText"
           placeholder="发消息..."
+          :auto-height="true"
+          :fixed="true"
+          :cursor-spacing="20"
           :adjust-position="true"
-          @confirm="sendMsg"
-          confirm-type="send"
+          maxlength="500"
         />
       </view>
-      <view v-if="inputText.trim()" class="send-btn" @tap="sendMsg">发送</view>
-      <view v-else class="input-emoji-btn" @tap="showEmoji">😊</view>
+      <view v-if="inputText.trim()" class="send-btn-active" @tap="sendMsg">
+        <text>发送</text>
+      </view>
+      <view v-else class="input-emoji-btn" @tap="showEmoji">
+        <text class="icon">😊</text>
+      </view>
     </view>
   </view>
 </template>
@@ -180,102 +192,124 @@ function showEmoji() {
 <style scoped>
 .chat-page {
   min-height: 100vh;
-  background: #f5f5f0;
+  background: #f8f8f8;
   display: flex;
   flex-direction: column;
 }
 
 .nav-bar {
   background: #ffffff;
-  border-bottom: 1rpx solid var(--border);
-  padding-top: var(--status-bar-height, 44px);
   flex-shrink: 0;
+  box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.05);
+  z-index: 100;
 }
 
 .nav-inner {
   display: flex;
   align-items: center;
-  padding: 16rpx 28rpx;
+  padding: 12rpx 28rpx;
+  height: 88rpx;
 }
 
 .back-btn {
-  font-size: 30rpx;
+  width: 60rpx;
+  height: 60rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.back-icon {
+  font-size: 60rpx;
   color: var(--text-main);
-  min-width: 80rpx;
+  line-height: 1;
 }
 
 .nav-center {
   flex: 1;
-  text-align: center;
+  display: flex;
+  /* flex-direction: column; */
+  align-items: center;
+  /* justify-content: left; */
+  gap: 10rpx;
 }
 
 .nav-name {
   font-size: 32rpx;
-  font-weight: 600;
+  font-weight: 700;
   color: var(--text-main);
+  line-height: 1.2;
+}
+
+.nav-status {
+  font-size: 20rpx;
+  color: #52c41a;
+  margin-top: 4rpx;
 }
 
 .nav-more {
-  font-size: 40rpx;
+  width: 60rpx;
+  height: 60rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 44rpx;
   color: var(--text-sub);
-  min-width: 80rpx;
-  text-align: right;
 }
 
 /* 消息列表 */
 .msg-scroll {
   flex: 1;
-  height: calc(100vh - 110rpx - 110rpx - var(--status-bar-height, 44px));
+  height: 0; /* 让 flex:1 起作用 */
 }
 
 .msg-list {
-  padding: 20rpx 24rpx;
+  padding: 32rpx 24rpx;
 }
 
 .chat-date-tip {
   text-align: center;
   font-size: 22rpx;
   color: var(--text-hint);
-  background: rgba(0, 0, 0, 0.06);
-  border-radius: 100rpx;
-  padding: 6rpx 24rpx;
-  display: inline-block;
-  margin: 0 auto 24rpx;
+  margin: 10rpx auto 40rpx;
+  background: rgba(0, 0, 0, 0.05);
+  padding: 4rpx 20rpx;
+  border-radius: 20rpx;
   width: fit-content;
-  position: relative;
-  left: 50%;
-  transform: translateX(-50%);
 }
 
 .msg-row {
   display: flex;
-  align-items: flex-end;
-  gap: 14rpx;
-  margin-bottom: 24rpx;
+  align-items: flex-start;
+  gap: 16rpx;
+  margin-bottom: 40rpx;
 }
 
 .msg-row-me {
   flex-direction: row-reverse;
 }
 
+.chat-avatar-wrap {
+  flex-shrink: 0;
+}
+
 .chat-avatar {
-  width: 72rpx;
-  height: 72rpx;
-  border-radius: 50%;
+  width: 84rpx;
+  height: 84rpx;
+  border-radius: 28rpx;
   background: #ffffff;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 38rpx;
-  flex-shrink: 0;
-  border: 1rpx solid var(--border);
+  font-size: 44rpx;
+  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.05);
 }
 
 .bubble-wrap {
-  max-width: 66%;
+  max-width: 70%;
   display: flex;
   flex-direction: column;
-  gap: 6rpx;
+  gap: 8rpx;
 }
 
 .msg-row-me .bubble-wrap {
@@ -283,66 +317,68 @@ function showEmoji() {
 }
 
 .bubble {
-  padding: 20rpx 26rpx;
-  border-radius: 24rpx;
+  padding: 20rpx 28rpx;
+  position: relative;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.02);
 }
 
 .bubble-other {
   background: #ffffff;
-  border-radius: 4rpx 24rpx 24rpx 24rpx;
+  border-radius: 4rpx 28rpx 28rpx 28rpx;
+  color: var(--text-main);
 }
 
 .bubble-me {
   background: var(--primary);
-  border-radius: 24rpx 4rpx 24rpx 24rpx;
+  border-radius: 28rpx 4rpx 28rpx 28rpx;
+  color: #ffffff;
 }
 
 .bubble-text {
   font-size: 30rpx;
-  line-height: 1.7;
-  display: block;
-}
-
-.bubble-other .bubble-text {
-  color: var(--text-main);
-}
-.bubble-me .bubble-text {
-  color: #ffffff;
+  line-height: 1.6;
+  word-break: break-all;
 }
 
 .msg-time {
   font-size: 20rpx;
   color: var(--text-hint);
+  margin: 0 8rpx;
 }
 
 /* 输入栏 */
 .input-bar {
   background: #ffffff;
-  border-top: 1rpx solid var(--border);
-  padding: 16rpx 20rpx;
+  border-top: 1rpx solid #eeeeee;
+  padding: 20rpx 24rpx;
+  padding-bottom: calc(20rpx + env(safe-area-inset-bottom));
   display: flex;
-  align-items: center;
-  gap: 16rpx;
+  align-items: flex-end;
+  gap: 20rpx;
   flex-shrink: 0;
 }
 
-.input-extra-btn {
+.input-extra-btn,
+.input-emoji-btn {
   width: 72rpx;
   height: 72rpx;
-  border-radius: 50%;
-  background: var(--bg);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 36rpx;
-  color: var(--text-sub);
+  background: #f5f5f5;
+  border-radius: 50%;
   flex-shrink: 0;
+}
+
+.icon {
+  font-size: 40rpx;
+  color: var(--text-sub);
 }
 
 .input-wrap {
   flex: 1;
-  background: var(--bg);
-  border-radius: 100rpx;
+  background: #f5f5f5;
+  border-radius: 20rpx;
   padding: 0 24rpx;
   height: 72rpx;
   display: flex;
@@ -353,29 +389,26 @@ function showEmoji() {
   width: 100%;
   font-size: 30rpx;
   color: var(--text-main);
-  height: 72rpx;
-  line-height: 72rpx;
+  line-height: 40rpx;
 }
 
-.send-btn {
+.send-btn-active {
   background: var(--primary);
   color: #ffffff;
-  border-radius: 100rpx;
-  padding: 16rpx 30rpx;
-  font-size: 28rpx;
-  font-weight: 600;
-  flex-shrink: 0;
-}
-
-.input-emoji-btn {
-  width: 72rpx;
+  border-radius: 16rpx;
+  padding: 0 28rpx;
   height: 72rpx;
-  border-radius: 50%;
-  background: var(--bg);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 36rpx;
+  font-size: 28rpx;
+  font-weight: 700;
   flex-shrink: 0;
+  transition: all 0.2s;
+}
+
+.send-btn-active:active {
+  opacity: 0.8;
+  transform: scale(0.95);
 }
 </style>

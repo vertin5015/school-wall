@@ -6,9 +6,8 @@ page {
     sans-serif;
   color: #1a1a1a;
   font-size: 28rpx;
-}
 
-:root {
+  /* 全局变量 */
   --primary: #ff5a35;
   --primary-light: #fff0ec;
   --primary-mid: #ff7a5a;

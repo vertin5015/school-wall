@@ -1,18 +1,5 @@
 <template>
   <view class="publish-page">
-    <view class="nav-bar">
-      <view class="nav-inner">
-        <view class="cancel-btn" @tap="onCancel">取消</view>
-        <text class="nav-title">发帖</text>
-        <view
-          class="publish-btn"
-          :class="{ active: canPublish }"
-          @tap="onPublish"
-          >发布</view
-        >
-      </view>
-    </view>
-
     <scroll-view scroll-y class="scroll-area">
       <view class="form-wrap">
         <!-- 标题输入 -->
@@ -31,12 +18,14 @@
         <!-- 正文输入 -->
         <view class="form-item">
           <textarea
+            class="content-input"
+            v-model="content"
             placeholder="分享你的故事、问题或想法...（支持 @ 同学，# 话题标签）"
           />
           <text class="word-count">{{ content.length }}/2000</text>
         </view>
 
-        <!-- 图片上传 -->
+        <!-- 图片上传 & 发布按钮 -->
         <view class="img-section">
           <view class="img-list">
             <view v-for="(img, i) in selectedImages" :key="i" class="img-item">
@@ -51,6 +40,14 @@
               <text class="img-add-icon">＋</text>
               <text class="img-add-tip">{{ selectedImages.length }}/9</text>
             </view>
+            <!-- 发布按钮移到这里 -->
+          </view>
+          <view
+            class="publish-btn-inline"
+            :class="{ active: canPublish }"
+            @tap="onPublish"
+          >
+            <text>发布</text>
           </view>
         </view>
 
@@ -170,20 +167,6 @@ function selectTag(value) {
   }
 }
 
-function onCancel() {
-  if (title.value || content.value) {
-    uni.showModal({
-      title: "提示",
-      content: "确定放弃编辑吗？",
-      success: ({ confirm }) => {
-        if (confirm) uni.navigateBack();
-      },
-    });
-  } else {
-    uni.navigateBack();
-  }
-}
-
 function onPublish() {
   if (!canPublish.value) return;
   const tagEntry = availableTags.find((t) => t.label === selectedTag.value) || {
@@ -206,59 +189,50 @@ function onPublish() {
   });
   uni.showToast({ title: "发布成功！", icon: "success" });
   setTimeout(() => {
-    uni.switchTab({ url: "/pages/home/index" });
+    uni.navigateBack();
   }, 800);
 }
 </script>
 
 <style scoped>
+.tag {
+  display: inline-block;
+  font-size: 20rpx;
+  border-radius: 8rpx;
+  padding: 2rpx 10rpx;
+  line-height: 1.6;
+}
+
+.tag-anon {
+  background: #fff0ec;
+  color: #ff5a35;
+}
+.tag-orange {
+  background: #fff0ec;
+  color: #ff5a35;
+}
+.tag-blue {
+  background: #eef5ff;
+  color: #3d7ee8;
+}
+.tag-pink {
+  background: #fff0f6;
+  color: #e84393;
+}
+.tag-green {
+  background: #eefaf0;
+  color: #29a84a;
+}
+.tag-gray {
+  background: #f5f5f5;
+  color: #888888;
+}
+
 .publish-page {
   min-height: 100vh;
   background: #ffffff;
   display: flex;
   flex-direction: column;
-}
-
-.nav-bar {
-  background: #ffffff;
-  border-bottom: 1rpx solid var(--border);
-  padding-top: var(--status-bar-height, 44px);
-  flex-shrink: 0;
-}
-
-.nav-inner {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 16rpx 32rpx;
-}
-
-.cancel-btn {
-  font-size: 30rpx;
-  color: var(--text-sub);
-  min-width: 80rpx;
-}
-
-.nav-title {
-  font-size: 32rpx;
-  font-weight: 600;
-  color: var(--text-main);
-}
-
-.publish-btn {
-  font-size: 30rpx;
-  color: var(--text-hint);
-  background: var(--bg);
-  border-radius: 100rpx;
-  padding: 10rpx 28rpx;
-  min-width: 80rpx;
-  text-align: center;
-}
-
-.publish-btn.active {
-  background: var(--primary);
-  color: #ffffff;
-  font-weight: 600;
 }
 
 .scroll-area {
@@ -306,8 +280,10 @@ function onPublish() {
   right: 32rpx;
 }
 
-/* 图片上传 */
+/* 图片上传 & 发布按钮 */
 .img-section {
+  display: flex;
+  justify-content: space-between;
   padding: 16rpx 32rpx 24rpx;
   border-bottom: 1rpx solid var(--border);
 }
@@ -315,7 +291,7 @@ function onPublish() {
 .img-list {
   display: flex;
   flex-wrap: wrap;
-  gap: 16rpx;
+  align-items: flex-start;
 }
 
 .img-item {
@@ -369,6 +345,31 @@ function onPublish() {
 .img-add-tip {
   font-size: 22rpx;
   color: var(--text-hint);
+}
+
+/* 行内发布按钮 */
+.publish-btn-inline {
+  width: 120rpx;
+  height: 80rpx;
+  margin-top: 108rpx;
+  border-radius: 16rpx;
+  background: #f5f5f5;
+  color: #bbbbbb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32rpx;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.publish-btn-inline.active {
+  background: var(--primary);
+  color: #ffffff;
+}
+
+.publish-btn-inline:active {
+  transform: scale(0.95);
 }
 
 /* 标签选择 */
