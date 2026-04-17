@@ -1,10 +1,10 @@
 import { defineStore } from "pinia";
-import { mockUser } from "@/mock/data";
+import { mockUser } from "../mock/data";
 
 export const useUserStore = defineStore("user", {
   state: () => ({
-    isLoggedIn: false,
-    userInfo: null,
+    isLoggedIn: true,
+    userInfo: { ...mockUser },
   }),
   actions: {
     wxLogin() {

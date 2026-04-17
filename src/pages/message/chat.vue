@@ -86,18 +86,24 @@
 
 <script setup>
 import { ref, computed, onMounted, nextTick } from "vue";
-import { mockConversations, mockUser } from "@/mock/data";
+import { onLoad } from "@dcloudio/uni-app";
+import { mockConversations, mockUser } from "../../mock/data";
 
-const pages = getCurrentPages();
-const currentPage = pages[pages.length - 1];
-const chatId = Number(currentPage?.options?.id || 1);
-const chatName = decodeURIComponent(currentPage?.options?.name || "用户");
-const chatAvatar = decodeURIComponent(currentPage?.options?.avatar || "👤");
-
+const chatName = ref("用户");
+const chatAvatar = ref("👤");
+const messages = ref([]);
 const myAvatar = mockUser.avatar;
 
-const conv = mockConversations.find((c) => c.id === chatId);
-const messages = ref(conv ? [...conv.messages] : []);
+onLoad((options) => {
+  const chatId = Number(options.id || 1);
+  chatName.value = decodeURIComponent(options.name || "用户");
+  chatAvatar.value = decodeURIComponent(options.avatar || "👤");
+
+  const conv = mockConversations.find((c) => c.id === chatId);
+  if (conv) {
+    messages.value = [...conv.messages];
+  }
+});
 
 const inputText = ref("");
 const scrollTop = ref(99999);

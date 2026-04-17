@@ -60,9 +60,14 @@
 
 <script setup>
 import { ref } from "vue";
-import { mockConversations } from "@/mock/data";
+import { onShow } from "@dcloudio/uni-app";
+import { mockConversations } from "../../mock/data";
 
-const conversations = ref([...mockConversations]);
+const conversations = ref([]);
+
+onShow(() => {
+  conversations.value = [...mockConversations];
+});
 
 function goChat(conv) {
   // 清除未读

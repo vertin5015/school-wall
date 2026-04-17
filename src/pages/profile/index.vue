@@ -103,14 +103,16 @@
     <view
       v-if="showEditModal"
       class="modal-mask"
-      @tap.self="showEditModal = false"
+      :class="{ 'modal-mask-active': showEditModal }"
+      @tap="showEditModal = false"
+      @touchmove.stop.prevent
     >
-      <view class="modal-wrap">
+      <view class="modal-wrap" @tap.stop>
         <view class="modal-header">
           <text class="modal-title">编辑资料</text>
           <view class="modal-close" @tap="showEditModal = false">×</view>
         </view>
-        <view class="modal-form">
+        <scroll-view scroll-y class="modal-form">
           <view class="modal-field">
             <text class="field-label">昵称</text>
             <input
@@ -118,6 +120,7 @@
               v-model="editForm.nickname"
               placeholder="输入昵称"
               :maxlength="20"
+              :cursor-spacing="100"
             />
           </view>
           <view class="modal-field">
@@ -127,6 +130,7 @@
               v-model="editForm.school"
               placeholder="输入学校名称"
               :maxlength="30"
+              :cursor-spacing="100"
             />
           </view>
           <view class="modal-field">
@@ -136,9 +140,11 @@
               v-model="editForm.bio"
               placeholder="介绍一下自己..."
               :maxlength="100"
+              :cursor-spacing="100"
+              :fixed="true"
             />
           </view>
-        </view>
+        </scroll-view>
         <view class="modal-footer">
           <view class="modal-cancel" @tap="showEditModal = false">取消</view>
           <view class="modal-confirm" @tap="saveProfile">保存</view>
@@ -497,80 +503,109 @@ function onLogout() {
 .modal-mask {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.5);
-  z-index: 300;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 1000;
   display: flex;
   align-items: flex-end;
+  transition: opacity 0.3s ease;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.modal-mask-active {
+  opacity: 1;
+  pointer-events: auto;
 }
 
 .modal-wrap {
   background: #ffffff;
-  border-radius: 28rpx 28rpx 0 0;
+  border-radius: 40rpx 40rpx 0 0;
   width: 100%;
-  padding: 28rpx 32rpx 60rpx;
+  padding: 32rpx 32rpx calc(40rpx + env(safe-area-inset-bottom));
+  transform: translateY(100%);
+  transition: transform 0.3s cubic-bezier(0.2, 0, 0, 1);
+}
+
+.modal-mask-active .modal-wrap {
+  transform: translateY(0);
 }
 
 .modal-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 28rpx;
+  margin-bottom: 32rpx;
+  padding: 0 8rpx;
 }
 
 .modal-title {
-  font-size: 32rpx;
-  font-weight: 700;
+  font-size: 34rpx;
+  font-weight: 800;
   color: var(--text-main);
 }
 
 .modal-close {
-  font-size: 40rpx;
+  font-size: 44rpx;
   color: var(--text-hint);
-  width: 48rpx;
-  height: 48rpx;
+  width: 56rpx;
+  height: 56rpx;
   display: flex;
   align-items: center;
   justify-content: center;
+  background: #f5f5f5;
+  border-radius: 50%;
 }
 
 .modal-form {
+  max-height: 60vh;
   display: flex;
   flex-direction: column;
-  gap: 20rpx;
-  margin-bottom: 28rpx;
+  gap: 24rpx;
+  margin-bottom: 40rpx;
 }
 
 .modal-field {
   display: flex;
   flex-direction: column;
-  gap: 8rpx;
+  gap: 12rpx;
+  margin-bottom: 24rpx;
+  padding: 0 8rpx;
 }
 
 .field-label {
-  font-size: 24rpx;
+  font-size: 26rpx;
+  font-weight: 600;
   color: var(--text-hint);
 }
 
 .field-input {
-  border-bottom: 1rpx solid var(--border);
-  padding: 12rpx 0;
-  font-size: 30rpx;
+  border-bottom: 2rpx solid #f0f0f0;
+  padding: 16rpx 0;
+  font-size: 32rpx;
   color: var(--text-main);
+  transition: border-color 0.2s;
+}
+
+.field-input:focus {
+  border-bottom-color: var(--primary);
 }
 
 .field-textarea {
-  border: 1rpx solid var(--border);
-  border-radius: 12rpx;
-  padding: 16rpx;
-  font-size: 28rpx;
-  color: var(--text-sub);
-  min-height: 120rpx;
-  line-height: 1.7;
+  background: #f8f8f8;
+  border-radius: 20rpx;
+  padding: 24rpx;
+  font-size: 30rpx;
+  color: var(--text-main);
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 200rpx;
+  line-height: 1.6;
 }
 
 .modal-footer {
   display: flex;
-  gap: 16rpx;
+  gap: 20rpx;
+  padding: 0 8rpx;
 }
 
 .modal-cancel {

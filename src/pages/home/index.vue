@@ -24,12 +24,14 @@
       </view>
 
       <!-- Banner -->
-      <view class="banner" @tap="onBanner">
+      <view class="banner-wrapper">
+        <view class="banner" @tap="onBanner">
         <view class="banner-text">
           <text class="banner-title">🎉 期末加油！</text>
           <text class="banner-sub">距期末考试还有 21 天，冲！</text>
         </view>
         <text class="banner-emoji">📚</text>
+      </view>
       </view>
 
       <!-- 分类 Tab -->
@@ -242,8 +244,12 @@ function goPublish() {
 }
 
 /* Banner */
+.banner-wrapper {
+  background: #ffffff;
+}
+
 .banner {
-  margin: 0 24rpx 20rpx;
+  margin: 0 24rpx;
   border-radius: 24rpx;
   background: linear-gradient(120deg, #ff5a35, #ff9035);
   padding: 28rpx 32rpx;

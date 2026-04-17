@@ -125,24 +125,38 @@
     </view>
 
     <!-- 评论输入框弹窗 -->
-    <view v-if="showCommentInput" class="comment-popup" @tap.self="hideInput">
-      <view class="comment-popup-inner safe-area-bottom">
+    <view
+      v-if="showCommentInput"
+      class="comment-popup-mask"
+      :class="{ 'mask-active': showCommentInput }"
+      @tap.self="hideInput"
+      @touchmove.stop.prevent
+    >
+      <view class="comment-popup-inner" @tap.stop>
+        <view class="popup-header">
+          <text class="popup-title">发表评论</text>
+          <text class="popup-close" @tap="hideInput">✕</text>
+        </view>
         <textarea
           class="comment-textarea"
           v-model="commentText"
-          placeholder="说点什么..."
-          auto-focus
-          :maxlength="200"
+          placeholder="说点好听的吧..."
+          :auto-focus="true"
+          :fixed="true"
+          :cursor-spacing="40"
+          :adjust-position="true"
+          :show-confirm-bar="false"
+          maxlength="200"
         />
         <view class="comment-popup-footer">
           <text class="word-count">{{ commentText.length }}/200</text>
-          <button
-            class="submit-btn"
-            :disabled="!commentText.trim()"
+          <view
+            class="send-btn"
+            :class="{ 'send-btn-active': commentText.trim() }"
             @tap="submitComment"
           >
             发送
-          </button>
+          </view>
         </view>
       </view>
     </view>
@@ -190,11 +204,11 @@ function showMore() {
 }
 
 function onLike() {
-  postsStore.toggleLike(postId);
+  postsStore.toggleLike(postId.value);
 }
 
 function onCollect() {
-  postsStore.toggleCollect(postId);
+  postsStore.toggleCollect(postId.value);
 }
 
 function onShare() {
@@ -224,7 +238,7 @@ function hideInput() {
 
 function submitComment() {
   if (!commentText.value.trim()) return;
-  postsStore.addComment(postId, {
+  postsStore.addComment(postId.value, {
     author: userStore.userInfo?.nickname || "我",
     avatar: userStore.userInfo?.avatar || "🍊",
     content: commentText.value.trim(),
@@ -564,89 +578,143 @@ function likeComment(comment) {
 /* 底部操作栏 */
 .action-bar {
   background: #ffffff;
-  border-top: 1rpx solid var(--border);
-  padding: 16rpx 24rpx;
+  border-top: 1rpx solid #f0f0f0;
+  padding: 16rpx 24rpx calc(16rpx + env(safe-area-inset-bottom));
   display: flex;
   align-items: center;
-  gap: 16rpx;
+  gap: 20rpx;
   flex-shrink: 0;
+  z-index: 100;
 }
 
 .comment-input {
   flex: 1;
-  background: var(--bg);
+  background: #f5f5f5;
   border-radius: 100rpx;
-  padding: 16rpx 28rpx;
+  padding: 18rpx 32rpx;
   display: flex;
   align-items: center;
+  transition: all 0.2s;
+}
+
+.comment-input:active {
+  background: #eeeeee;
 }
 
 .input-placeholder {
   font-size: 28rpx;
-  color: var(--text-hint);
+  color: #999999;
 }
 
 .action-btns {
   display: flex;
   align-items: center;
-  gap: 8rpx;
+  gap: 12rpx;
 }
 
 .action-btn {
-  width: 72rpx;
-  height: 72rpx;
-  border-radius: 50%;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 2rpx;
+  padding: 8rpx;
+  min-width: 64rpx;
+  transition: all 0.2s;
+}
+
+.action-btn:active {
+  transform: scale(0.9);
 }
 
 .action-btn.liked .action-btn-icon {
-}
-.action-btn-icon {
-  font-size: 32rpx;
-}
-.action-btn-num {
-  font-size: 18rpx;
-  color: var(--text-hint);
+  color: #ff4d4f;
 }
 
-/* 评论输入弹窗 */
-.comment-popup {
+.action-btn.collected .action-btn-icon {
+  color: #ffcc00;
+}
+
+.action-btn-icon {
+  font-size: 36rpx;
+  line-height: 1;
+}
+
+.action-btn-num {
+  font-size: 20rpx;
+  color: #999999;
+  margin-top: 4rpx;
+}
+
+/* 评论输入弹窗优化 */
+.comment-popup-mask {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.45);
-  z-index: 200;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 999;
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+  pointer-events: none;
+}
+
+.mask-active {
+  opacity: 1;
+  pointer-events: auto;
 }
 
 .comment-popup-inner {
   background: #ffffff;
-  border-radius: 28rpx 28rpx 0 0;
-  padding: 28rpx 28rpx 20rpx;
+  border-radius: 40rpx 40rpx 0 0;
+  padding: 32rpx 32rpx calc(32rpx + env(safe-area-inset-bottom));
+  transform: translateY(100%);
+  transition: transform 0.3s cubic-bezier(0.2, 0, 0, 1);
+  box-shadow: 0 -8rpx 32rpx rgba(0, 0, 0, 0.1);
+}
+
+.mask-active .comment-popup-inner {
+  transform: translateY(0);
+}
+
+.popup-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24rpx;
+  padding: 0 4rpx;
+}
+
+.popup-title {
+  font-size: 30rpx;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.popup-close {
+  font-size: 32rpx;
+  color: var(--text-hint);
+  padding: 8rpx;
 }
 
 .comment-textarea {
   width: 100%;
-  height: 160rpx;
-  font-size: 30rpx;
+  height: 240rpx;
+  font-size: 32rpx;
   color: var(--text-main);
-  line-height: 1.7;
-  background: var(--bg);
-  border-radius: 16rpx;
-  padding: 16rpx 20rpx;
+  line-height: 1.6;
+  background: #f7f7f7;
+  border-radius: 24rpx;
+  padding: 24rpx;
   box-sizing: border-box;
+  margin-bottom: 24rpx;
 }
 
 .comment-popup-footer {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-top: 16rpx;
+  padding: 0 4rpx;
 }
 
 .word-count {
@@ -654,22 +722,28 @@ function likeComment(comment) {
   color: var(--text-hint);
 }
 
-.submit-btn {
-  background: var(--primary) !important;
-  color: #fff !important;
-  border-radius: 100rpx !important;
-  font-size: 28rpx !important;
-  padding: 12rpx 40rpx !important;
-  border: none !important;
+.send-btn {
+  width: 160rpx;
+  height: 72rpx;
+  background: #f0f0f0;
+  color: #bbbbbb;
+  border-radius: 36rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28rpx;
+  font-weight: 600;
+  transition: all 0.2s;
 }
 
-.submit-btn::after {
-  border: none;
+.send-btn-active {
+  background: var(--primary);
+  color: #ffffff;
+  box-shadow: 0 4rpx 12rpx rgba(255, 90, 53, 0.3);
 }
 
-.submit-btn[disabled] {
-  background: #ddd !important;
-  color: #aaa !important;
+.send-btn:active {
+  transform: scale(0.96);
 }
 
 .loading-wrap {
