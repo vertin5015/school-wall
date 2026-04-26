@@ -60,12 +60,18 @@
 
 <script setup>
 import { ref } from "vue";
-import { onShow } from "@dcloudio/uni-app";
+import { onShow, onLoad } from "@dcloudio/uni-app";
 import { mockConversations } from "../../mock/data";
 
 const conversations = ref([]);
 
+onLoad(() => {
+  console.log("Message Index onLoad");
+  conversations.value = [...mockConversations];
+});
+
 onShow(() => {
+  console.log("Message Index onShow");
   conversations.value = [...mockConversations];
 });
 

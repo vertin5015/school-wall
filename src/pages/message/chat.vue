@@ -3,9 +3,9 @@
     <!-- 导航栏 -->
     <view class="nav-bar">
       <view class="nav-inner">
-        <!-- <view class="back-btn" @tap="goBack">
+        <view class="back-btn" @tap="goBack">
            <text class="back-icon">‹</text>
-        </view> -->
+        </view>
         <view class="nav-center">
           <text class="nav-name">{{ chatName }}</text>
           <text class="nav-status">在线</text>
@@ -21,6 +21,7 @@
       :scroll-top="scrollTop"
       :scroll-into-view="lastMsgId"
       scroll-with-animation
+      :style="{ paddingBottom: keyboardHeight + 'px' }"
     >
       <view class="msg-list">
         <view class="chat-date-tip">{{ today }}</view>
@@ -37,6 +38,7 @@
             <view class="chat-avatar">{{ chatAvatar }}</view>
           </view>
 
+          <!-- 消息主体 -->
           <view class="bubble-wrap">
             <view
               class="bubble"
@@ -58,7 +60,10 @@
     </scroll-view>
 
     <!-- 输入栏 -->
-    <view class="input-bar safe-area-bottom">
+    <view 
+      class="input-bar safe-area-bottom"
+      :style="{ transform: `translateY(-${keyboardHeight}px)`, transition: 'transform 0.25s ease' }"
+    >
       <view class="input-extra-btn" @tap="toggleExtra">
         <text class="icon">＋</text>
       </view>
@@ -70,8 +75,11 @@
           :auto-height="true"
           :fixed="true"
           :cursor-spacing="20"
-          :adjust-position="true"
+          :adjust-position="false"
           maxlength="500"
+          @focus="onInputFocus"
+          @blur="onInputBlur"
+          @keyboardheightchange="onKeyboardHeightChange"
         />
       </view>
       <view v-if="inputText.trim()" class="send-btn-active" @tap="sendMsg">
@@ -86,7 +94,7 @@
 
 <script setup>
 import { ref, computed, onMounted, nextTick } from "vue";
-import { onLoad } from "@dcloudio/uni-app";
+import { onLoad, onUnload } from "@dcloudio/uni-app";
 import { mockConversations, mockUser } from "../../mock/data";
 
 const chatName = ref("用户");
@@ -94,15 +102,49 @@ const chatAvatar = ref("👤");
 const messages = ref([]);
 const myAvatar = mockUser.avatar;
 
-onLoad((options) => {
-  const chatId = Number(options.id || 1);
-  chatName.value = decodeURIComponent(options.name || "用户");
-  chatAvatar.value = decodeURIComponent(options.avatar || "👤");
+const keyboardHeight = ref(0);
 
-  const conv = mockConversations.find((c) => c.id === chatId);
-  if (conv) {
-    messages.value = [...conv.messages];
+function onInputFocus(e) {
+  // 部分平台可以通过 focus 事件获取键盘高度
+  if (e.detail.height) {
+    keyboardHeight.value = e.detail.height;
   }
+  scrollToBottom();
+}
+
+function onInputBlur() {
+  keyboardHeight.value = 0;
+}
+
+function onKeyboardHeightChange(e) {
+  keyboardHeight.value = e.detail.height;
+  if (keyboardHeight.value > 0) {
+    scrollToBottom();
+  }
+}
+
+onLoad((options) => {
+  console.log("Chat Page onLoad options:", options);
+  const chatId = Number(options.id || 1);
+  if (options.name) chatName.value = decodeURIComponent(options.name);
+  if (options.avatar) chatAvatar.value = decodeURIComponent(options.avatar);
+
+  // 确保 mockConversations 存在
+  if (mockConversations && mockConversations.length > 0) {
+    const conv = mockConversations.find((c) => Number(c.id) === chatId);
+    if (conv) {
+      messages.value = [...conv.messages];
+      console.log("Loaded messages:", messages.value.length);
+    } else {
+      console.warn("Conversation not found for id:", chatId);
+      // 兜底加载第一个会话
+      messages.value = [...mockConversations[0].messages];
+    }
+  }
+});
+
+onUnload(() => {
+  keyboardHeight.value = 0;
 });
 
 const inputText = ref("");
@@ -197,10 +239,11 @@ function showEmoji() {
 
 <style scoped>
 .chat-page {
-  min-height: 100vh;
+  height: 100vh;
   background: #f8f8f8;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 .nav-bar {
@@ -208,6 +251,7 @@ function showEmoji() {
   flex-shrink: 0;
   box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.05);
   z-index: 100;
+  padding-top: var(--status-bar-height, 44px);
 }
 
 .nav-inner {
@@ -249,7 +293,6 @@ function showEmoji() {
 
 .nav-status {
   font-size: 20rpx;
-  color: #52c41a;
   margin-top: 4rpx;
 }
 
@@ -266,7 +309,8 @@ function showEmoji() {
 /* 消息列表 */
 .msg-scroll {
   flex: 1;
-  height: 0; /* 让 flex:1 起作用 */
+  height: 100%; /* 使用 100% 确保占满 flex 容器 */
+  overflow: hidden;
 }
 
 .msg-list {
@@ -289,10 +333,11 @@ function showEmoji() {
   align-items: flex-start;
   gap: 16rpx;
   margin-bottom: 40rpx;
+  width: 100%;
 }
 
 .msg-row-me {
-  flex-direction: row-reverse;
+  justify-content: flex-end;
 }
 
 .chat-avatar-wrap {
@@ -309,6 +354,10 @@ function showEmoji() {
   justify-content: center;
   font-size: 44rpx;
   box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.05);
+}
+
+.chat-avatar-me {
+  background: var(--primary);
 }
 
 .bubble-wrap {
@@ -357,7 +406,7 @@ function showEmoji() {
   background: #ffffff;
   border-top: 1rpx solid #eeeeee;
   padding: 20rpx 24rpx;
-  padding-bottom: calc(20rpx + env(safe-area-inset-bottom));
+  padding-bottom: 50rpx;
   display: flex;
   align-items: flex-end;
   gap: 20rpx;
