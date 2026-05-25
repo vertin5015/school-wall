@@ -6,7 +6,13 @@
         <view class="header-bg"></view>
         <view class="header-content">
           <view class="avatar-wrap" @tap="changeAvatar">
-            <view class="user-avatar">{{ userInfo.avatar }}</view>
+            <image 
+              v-if="userInfo.avatar && userInfo.avatar.includes('/')" 
+              class="user-avatar" 
+              :src="userInfo.avatar" 
+              mode="aspectFill" 
+            />
+            <view v-else class="user-avatar">{{ userInfo.avatar }}</view>
             <view class="avatar-edit-badge">✏</view>
           </view>
           <view class="user-info">
@@ -156,14 +162,13 @@
 
 <script setup>
 import { ref, computed, reactive } from "vue";
-import { useUserStore } from "@/stores/user";
-import { usePostsStore } from "@/stores/posts";
 import PostCard from "@/components/PostCard.vue";
 
-const userStore = useUserStore();
-const postsStore = usePostsStore();
+import { mockUser, mockPosts } from "@/mock/data.js";
 
-const userInfo = computed(() => userStore.userInfo || {});
+const userInfo = ref({ ...mockUser });
+const postList = ref([...mockPosts]);
+
 const activeTab = ref("posts");
 const showEditModal = ref(false);
 
@@ -173,13 +178,15 @@ const editForm = reactive({
   bio: "",
 });
 
-const myPosts = computed(() =>
-  postsStore.postList.filter((p) => p.authorId === userInfo.value.id),
-);
+const myPosts = computed(() => {
+  if (!userInfo.value.myPosts) return [];
+  return postList.value.filter((p) => userInfo.value.myPosts.includes(p.id));
+});
 
-const collectedPosts = computed(() =>
-  postsStore.postList.filter((p) => p.collected),
-);
+const collectedPosts = computed(() => {
+  if (!userInfo.value.myCollects) return [];
+  return postList.value.filter((p) => userInfo.value.myCollects.includes(p.id));
+});
 
 const settingItems = [
   { icon: "🔔", label: "消息通知设置", action: () => toast("开发中") },
@@ -208,7 +215,7 @@ function changeAvatar() {
     sizeType: ["compressed"],
     sourceType: ["album", "camera"],
     success: ({ tempFilePaths }) => {
-      userStore.updateProfile({ avatar: tempFilePaths[0] });
+      userInfo.value.avatar = tempFilePaths[0];
       uni.showToast({ title: "头像已更新", icon: "success" });
     },
   });
@@ -222,7 +229,11 @@ function editProfile() {
 }
 
 function saveProfile() {
-  userStore.updateProfile({ ...editForm });
+  // 将表单修改后的最新数据赋给 userInfo
+  userInfo.value.nickname = editForm.nickname;
+  userInfo.value.school = editForm.school;
+  userInfo.value.bio = editForm.bio;
+  
   showEditModal.value = false;
   uni.showToast({ title: "保存成功", icon: "success" });
 }
@@ -233,7 +244,7 @@ function onLogout() {
     content: "确定退出登录吗？",
     success: ({ confirm }) => {
       if (confirm) {
-        userStore.logout();
+        userInfo.value = {}; // ✅ 直接清空当前的响应式数据
         uni.reLaunch({ url: "/pages/login/index" });
       }
     },
