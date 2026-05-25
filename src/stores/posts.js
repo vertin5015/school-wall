@@ -9,6 +9,24 @@ export const usePostsStore = defineStore("posts", {
   getters: {
     postList: (state) => state.posts,
     getPostById: (state) => (id) => state.posts.find((p) => p.id === id),
+    searchPosts: (state) => (keyword) => {
+      const normalizedKeyword = String(keyword || "").trim().toLowerCase();
+      if (!normalizedKeyword) return state.posts;
+
+      return state.posts.filter((post) => {
+        const haystacks = [
+          post.title,
+          post.content,
+          post.tag,
+          post.author,
+          ...(post.comments || []).map((comment) => comment.content),
+        ];
+
+        return haystacks.some((item) =>
+          String(item || "").toLowerCase().includes(normalizedKeyword),
+        );
+      });
+    },
   },
   actions: {
     toggleLike(postId) {

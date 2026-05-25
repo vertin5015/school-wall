@@ -58,19 +58,39 @@
       </view>
 
       <!-- 搜索结果 -->
-      <view v-else class="result-placeholder">
-        <text>搜索功能正在接入中...</text>
+      <view v-else class="result-section">
+        <view class="result-head">
+          <text class="result-count">共找到 {{ resultPosts.length }} 条相关帖子</text>
+        </view>
+        <view v-if="resultPosts.length" class="result-list">
+          <PostCard v-for="post in resultPosts" :key="post.id" :post="post" />
+        </view>
+        <view v-else class="result-placeholder">
+          <text>没有找到相关内容，换个关键词试试</text>
+        </view>
       </view>
     </view>
   </view>
 </template>
 
 <script setup>
-import { ref } from "vue";
+import { computed, ref } from "vue";
+import { onLoad } from "@dcloudio/uni-app";
+import { usePostsStore } from "@/stores/posts";
+import PostCard from "@/components/PostCard.vue";
 
+const postsStore = usePostsStore();
 const keyword = ref("");
 const history = ref(["期末复习", "数学学长", "表白墙", "宿舍"]);
-const hotTags = ["毕业季", "校园卡招领", "求购二手书", "考研加油"];
+const hotTags = ["毕业季", "校园卡招领", "期末复习", "图书馆"];
+
+const resultPosts = computed(() => postsStore.searchPosts(keyword.value));
+
+onLoad((options) => {
+  if (options.keyword) {
+    keyword.value = decodeURIComponent(options.keyword);
+  }
+});
 
 function goBack() {
   uni.navigateBack();
@@ -82,7 +102,12 @@ function clear() {
 
 function onSearch() {
   if (!keyword.value.trim()) return;
-  uni.showToast({ title: "搜索中...", icon: "loading" });
+  const normalizedKeyword = keyword.value.trim();
+  keyword.value = normalizedKeyword;
+  if (!history.value.includes(normalizedKeyword)) {
+    history.value.unshift(normalizedKeyword);
+    history.value = history.value.slice(0, 8);
+  }
 }
 
 function setKeyword(val) {
@@ -197,6 +222,26 @@ function clearHistory() {
   display: flex;
   flex-direction: column;
   gap: 32rpx;
+}
+
+.result-head {
+  margin-bottom: 16rpx;
+}
+
+.result-count {
+  font-size: 24rpx;
+  color: var(--text-hint);
+}
+
+.result-list {
+  margin: 0 -24rpx;
+}
+
+.result-placeholder {
+  padding: 80rpx 0;
+  text-align: center;
+  color: var(--text-hint);
+  font-size: 28rpx;
 }
 
 .hot-item {

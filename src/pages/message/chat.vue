@@ -3,9 +3,9 @@
     <!-- 导航栏 -->
     <view class="nav-bar">
       <view class="nav-inner">
-        <view class="back-btn" @tap="goBack">
+        <!-- <view class="back-btn" @tap="goBack">
            <text class="back-icon">‹</text>
-        </view>
+        </view> -->
         <view class="nav-center">
           <text class="nav-name">{{ chatName }}</text>
           <text class="nav-status">在线</text>
@@ -38,15 +38,28 @@
             <view class="chat-avatar">{{ chatAvatar }}</view>
           </view>
 
-          <!-- 消息主体 -->
-          <view class="bubble-wrap">
-            <view
-              class="bubble"
-              :class="msg.fromMe ? 'bubble-me' : 'bubble-other'"
-            >
-              <text class="bubble-text">{{ msg.content }}</text>
+        <!-- 消息主体 -->
+        <view class="bubble-wrap">
+          <view
+            class="bubble"
+            :class="[
+              msg.fromMe ? 'bubble-me' : 'bubble-other',
+              msg.type === 'image' ? 'bubble-image' : '',
+            ]"
+          >
+              <text v-if="msg.type === 'text'" class="bubble-text">{{ msg.content }}</text>
+              <image
+                v-else-if="msg.type === 'image'"
+                :src="msg.imageUrl"
+                class="bubble-image-inner"
+                mode="widthFix"
+                @tap="previewImage(msg.imageUrl)"
+              />
             </view>
-            <text class="msg-time">{{ msg.time }}</text>
+            <view class="msg-meta">
+              <text class="msg-time">{{ msg.time }}</text>
+              <text v-if="msg.fromMe" class="msg-status">{{ getStatusText(msg.status) }}</text>
+            </view>
           </view>
 
           <!-- 自己头像 -->
@@ -95,12 +108,14 @@
 <script setup>
 import { ref, computed, onMounted, nextTick } from "vue";
 import { onLoad, onUnload } from "@dcloudio/uni-app";
-import { mockConversations, mockUser } from "../../mock/data";
+import { mockUser } from "../../mock/data";
+import { useChatStore } from "@/stores/chat";
 
 const chatName = ref("用户");
 const chatAvatar = ref("👤");
-const messages = ref([]);
+const conversationId = ref(0);
 const myAvatar = mockUser.avatar;
+const chatStore = useChatStore();
 
 const keyboardHeight = ref(0);
 
@@ -124,22 +139,18 @@ function onKeyboardHeightChange(e) {
 }
 
 onLoad((options) => {
-  console.log("Chat Page onLoad options:", options);
   const chatId = Number(options.id || 1);
+  conversationId.value = chatId;
   if (options.name) chatName.value = decodeURIComponent(options.name);
   if (options.avatar) chatAvatar.value = decodeURIComponent(options.avatar);
 
-  // 确保 mockConversations 存在
-  if (mockConversations && mockConversations.length > 0) {
-    const conv = mockConversations.find((c) => Number(c.id) === chatId);
-    if (conv) {
-      messages.value = [...conv.messages];
-      console.log("Loaded messages:", messages.value.length);
-    } else {
-      console.warn("Conversation not found for id:", chatId);
-      // 兜底加载第一个会话
-      messages.value = [...mockConversations[0].messages];
-    }
+  const conv = chatStore.getConversationById(chatId);
+  if (conv) {
+    chatName.value = options.name ? decodeURIComponent(options.name) : conv.name;
+    chatAvatar.value = options.avatar
+      ? decodeURIComponent(options.avatar)
+      : conv.avatar;
+    chatStore.markRead(chatId);
   }
 });
 
@@ -150,6 +161,9 @@ onUnload(() => {
 const inputText = ref("");
 const scrollTop = ref(99999);
 const lastMsgId = ref("");
+const messages = computed(
+  () => chatStore.getConversationById(conversationId.value)?.messages || [],
+);
 
 const today = new Date().toLocaleDateString("zh-CN", {
   month: "long",
@@ -171,16 +185,7 @@ function scrollToBottom() {
 
 function sendMsg() {
   if (!inputText.value.trim()) return;
-  const newMsg = {
-    id: Date.now(),
-    fromMe: true,
-    content: inputText.value.trim(),
-    time: new Date().toLocaleTimeString("zh-CN", {
-      hour: "2-digit",
-      minute: "2-digit",
-    }),
-  };
-  messages.value.push(newMsg);
+  chatStore.sendText(conversationId.value, inputText.value.trim());
   inputText.value = "";
   scrollToBottom();
 
@@ -194,15 +199,11 @@ function sendMsg() {
       "好的好的",
       "谢谢！",
     ];
-    messages.value.push({
-      id: Date.now() + 1,
-      fromMe: false,
-      content: replies[Math.floor(Math.random() * replies.length)],
-      time: new Date().toLocaleTimeString("zh-CN", {
-        hour: "2-digit",
-        minute: "2-digit",
-      }),
-    });
+    chatStore.receiveText(
+      conversationId.value,
+      replies[Math.floor(Math.random() * replies.length)],
+    );
+    chatStore.markRead(conversationId.value);
     scrollToBottom();
   }, 1000);
 }
@@ -215,12 +216,19 @@ function showMore() {
   uni.showActionSheet({
     itemList: ["查看对方主页", "投诉/举报", "清空聊天记录"],
     success: ({ tapIndex }) => {
+      if (tapIndex === 0) {
+        const conv = chatStore.getConversationById(conversationId.value);
+        if (!conv?.userId) return;
+        uni.navigateTo({
+          url: `/pages/user-profile/index?userId=${conv.userId}`,
+        });
+      }
       if (tapIndex === 2) {
         uni.showModal({
           title: "提示",
           content: "确定清空聊天记录吗？",
           success: ({ confirm }) => {
-            if (confirm) messages.value = [];
+            if (confirm) chatStore.clearMessages(conversationId.value);
           },
         });
       }
@@ -229,11 +237,53 @@ function showMore() {
 }
 
 function toggleExtra() {
-  uni.showToast({ title: "更多功能开发中", icon: "none" });
+  uni.showActionSheet({
+    itemList: ["发送图片"],
+    success: ({ tapIndex }) => {
+      if (tapIndex === 0) {
+        chooseSingleImage();
+      }
+    },
+  });
 }
 
 function showEmoji() {
   uni.showToast({ title: "emoji 开发中", icon: "none" });
+}
+
+function chooseSingleImage() {
+  uni.chooseImage({
+    count: 1,
+    sizeType: ["compressed"],
+    sourceType: ["album", "camera"],
+    success: ({ tempFilePaths }) => {
+      const imageUrl = tempFilePaths?.[0];
+      if (!imageUrl) return;
+      chatStore.sendImage(conversationId.value, imageUrl);
+      scrollToBottom();
+    },
+  });
+}
+
+function previewImage(imageUrl) {
+  if (!imageUrl) return;
+  const imageUrls = messages.value
+    .filter((item) => item.type === "image" && item.imageUrl)
+    .map((item) => item.imageUrl);
+  uni.previewImage({
+    current: imageUrl,
+    urls: imageUrls,
+  });
+}
+
+function getStatusText(status) {
+  const statusMap = {
+    pending: "发送中",
+    sent: "已发送",
+    received: "已送达",
+    failed: "发送失败",
+  };
+  return statusMap[status] || "已发送";
 }
 </script>
 
@@ -377,6 +427,10 @@ function showEmoji() {
   box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.02);
 }
 
+.bubble-image {
+  padding: 10rpx;
+}
+
 .bubble-other {
   background: #ffffff;
   border-radius: 4rpx 28rpx 28rpx 28rpx;
@@ -395,10 +449,29 @@ function showEmoji() {
   word-break: break-all;
 }
 
+.bubble-image-inner {
+  width: 320rpx;
+  max-height: 420rpx;
+  border-radius: 20rpx;
+  display: block;
+  background: #f3f3f3;
+}
+
+.msg-meta {
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+}
+
 .msg-time {
   font-size: 20rpx;
   color: var(--text-hint);
   margin: 0 8rpx;
+}
+
+.msg-status {
+  font-size: 20rpx;
+  color: var(--text-hint);
 }
 
 /* 输入栏 */

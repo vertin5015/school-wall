@@ -6,23 +6,25 @@
         <view class="header-bg"></view>
         <view class="header-content">
           <view class="avatar-wrap" @tap="changeAvatar">
-            <image 
-              v-if="userInfo.avatar && userInfo.avatar.includes('/')" 
-              class="user-avatar" 
-              :src="userInfo.avatar" 
-              mode="aspectFill" 
+            <image
+              v-if="displayUser.avatar && displayUser.avatar.includes('/')"
+              class="user-avatar"
+              :src="displayUser.avatar"
+              mode="aspectFill"
             />
-            <view v-else class="user-avatar">{{ userInfo.avatar }}</view>
-            <view class="avatar-edit-badge">✏</view>
+            <view v-else class="user-avatar">{{ displayUser.avatar }}</view>
+            <view v-if="isOwnProfile" class="avatar-edit-badge">✏</view>
           </view>
           <view class="user-info">
             <view class="nickname-row">
-              <text class="user-nickname">{{ userInfo.nickname }}</text>
-              <view class="edit-btn" @tap="editProfile">编辑资料</view>
+              <text class="user-nickname">{{ displayUser.nickname }}</text>
+              <view v-if="isOwnProfile" class="edit-btn" @tap="editProfile"
+                >编辑资料</view
+              >
             </view>
-            <text class="user-school">{{ userInfo.school }}</text>
+            <text class="user-school">{{ displayUser.school }}</text>
             <text class="user-bio">{{
-              userInfo.bio || "这个人很懒，什么都没写~"
+              displayUser.bio || "这个人很懒，什么都没写~"
             }}</text>
           </view>
         </view>
@@ -30,19 +32,21 @@
         <!-- 数据统计 -->
         <view class="stat-bar">
           <view class="stat-item" @tap="goMyPosts">
-            <text class="stat-num">{{ userInfo.postCount }}</text>
+            <text class="stat-num">{{ authoredPosts.length }}</text>
             <text class="stat-label">帖子</text>
           </view>
           <view class="stat-divider"></view>
           <view class="stat-item">
-            <text class="stat-num">{{ userInfo.likeCount }}</text>
+            <text class="stat-num">{{ receivedLikeCount }}</text>
             <text class="stat-label">获赞</text>
           </view>
-          <view class="stat-divider"></view>
-          <view class="stat-item" @tap="activeTab = 'collect'">
-            <text class="stat-num">{{ userInfo.collectCount }}</text>
-            <text class="stat-label">收藏</text>
-          </view>
+          <template v-if="isOwnProfile">
+            <view class="stat-divider"></view>
+            <view class="stat-item" @tap="activeTab = 'collect'">
+              <text class="stat-num">{{ collectedPosts.length }}</text>
+              <text class="stat-label">收藏</text>
+            </view>
+          </template>
         </view>
       </view>
 
@@ -52,9 +56,10 @@
           class="ptab"
           :class="{ active: activeTab === 'posts' }"
           @tap="activeTab = 'posts'"
-          >我的帖子</view
+          >{{ isOwnProfile ? "我的帖子" : "TA 的帖子" }}</view
         >
         <view
+          v-if="isOwnProfile"
           class="ptab"
           :class="{ active: activeTab === 'collect' }"
           @tap="activeTab = 'collect'"
@@ -64,15 +69,19 @@
 
       <!-- 帖子列表 -->
       <view class="post-list-section" v-if="activeTab === 'posts'">
-        <view v-if="myPosts.length === 0" class="empty-tip">
+        <view v-if="authoredPosts.length === 0" class="empty-tip">
           <text class="empty-emoji">📝</text>
-          <text class="empty-text">还没有发过帖子</text>
-          <view class="empty-btn" @tap="goPublish">去发帖</view>
+          <text class="empty-text">{{
+            isOwnProfile ? "还没有发过帖子" : "TA 还没有发过帖子"
+          }}</text>
+          <view v-if="isOwnProfile" class="empty-btn" @tap="goPublish"
+            >去发帖</view
+          >
         </view>
-        <PostCard v-for="post in myPosts" :key="post.id" :post="post" />
+        <PostCard v-for="post in authoredPosts" :key="post.id" :post="post" />
       </view>
 
-      <view class="post-list-section" v-if="activeTab === 'collect'">
+      <view class="post-list-section" v-if="isOwnProfile && activeTab === 'collect'">
         <view v-if="collectedPosts.length === 0" class="empty-tip">
           <text class="empty-emoji">⭐</text>
           <text class="empty-text">还没有收藏任何帖子</text>
@@ -81,7 +90,7 @@
       </view>
 
       <!-- 设置菜单 -->
-      <view class="settings-section">
+      <view v-if="isOwnProfile" class="settings-section">
         <text class="settings-title">设置</text>
         <view class="settings-list">
           <view
@@ -98,7 +107,7 @@
       </view>
 
       <!-- 退出登录 -->
-      <view class="logout-wrap">
+      <view v-if="isOwnProfile" class="logout-wrap">
         <view class="logout-btn" @tap="onLogout">退出登录</view>
       </view>
 
@@ -162,15 +171,18 @@
 
 <script setup>
 import { ref, computed, reactive } from "vue";
+import { onLoad } from "@dcloudio/uni-app";
 import PostCard from "@/components/PostCard.vue";
+import { usePostsStore } from "@/stores/posts";
+import { useUserStore } from "@/stores/user";
 
-import { mockUser, mockPosts } from "@/mock/data.js";
-
-const userInfo = ref({ ...mockUser });
-const postList = ref([...mockPosts]);
+const postsStore = usePostsStore();
+const userStore = useUserStore();
 
 const activeTab = ref("posts");
 const showEditModal = ref(false);
+const routeUserId = ref(null);
+const routeUserName = ref("");
 
 const editForm = reactive({
   nickname: "",
@@ -178,15 +190,73 @@ const editForm = reactive({
   bio: "",
 });
 
-const myPosts = computed(() => {
-  if (!userInfo.value.myPosts) return [];
-  return postList.value.filter((p) => userInfo.value.myPosts.includes(p.id));
+onLoad((options) => {
+  routeUserId.value = options.userId ? Number(options.userId) : null;
+  routeUserName.value = options.name ? decodeURIComponent(options.name) : "";
+});
+
+const isOwnProfile = computed(() => {
+  if (!routeUserId.value && !routeUserName.value) return true;
+  if (
+    routeUserName.value &&
+    routeUserName.value === (userStore.userInfo?.nickname || userStore.userInfo?.name)
+  ) {
+    return true;
+  }
+  return Number(routeUserId.value) === Number(userStore.userInfo?.id);
+});
+
+const displayUser = computed(() => {
+  if (isOwnProfile.value) return userStore.userInfo || {};
+  if (routeUserId.value) {
+    return (
+      userStore.getUserById(routeUserId.value) || {
+        id: routeUserId.value,
+        nickname: "校园同学",
+        avatar: "🙂",
+        school: "某某大学",
+        bio: "",
+      }
+    );
+  }
+  return (
+    userStore.getUserByName(routeUserName.value) || {
+      id: 0,
+      nickname: routeUserName.value || "校园同学",
+      avatar: "🙂",
+      school: "某某大学",
+      bio: "",
+    }
+  );
+});
+
+const authoredPosts = computed(() => {
+  if (isOwnProfile.value) {
+    const ownPostIds = userStore.userInfo?.myPosts || [];
+    return postsStore.postList.filter(
+      (post) =>
+        ownPostIds.includes(post.id) ||
+        Number(post.authorId) === Number(userStore.userInfo?.id),
+    );
+  }
+  if (!displayUser.value?.id) return [];
+  return postsStore.postList.filter(
+    (post) => Number(post.authorId) === Number(displayUser.value.id),
+  );
 });
 
 const collectedPosts = computed(() => {
-  if (!userInfo.value.myCollects) return [];
-  return postList.value.filter((p) => userInfo.value.myCollects.includes(p.id));
+  if (!isOwnProfile.value) return [];
+  return postsStore.postList.filter(
+    (post) =>
+      post.collected ||
+      userStore.userInfo?.myCollects?.includes(post.id),
+  );
 });
+
+const receivedLikeCount = computed(() =>
+  authoredPosts.value.reduce((total, post) => total + Number(post.likes || 0), 0),
+);
 
 const settingItems = [
   { icon: "🔔", label: "消息通知设置", action: () => toast("开发中") },
@@ -210,30 +280,33 @@ function goPublish() {
 }
 
 function changeAvatar() {
+  if (!isOwnProfile.value) return;
   uni.chooseImage({
     count: 1,
     sizeType: ["compressed"],
     sourceType: ["album", "camera"],
     success: ({ tempFilePaths }) => {
-      userInfo.value.avatar = tempFilePaths[0];
+      userStore.updateProfile({ avatar: tempFilePaths[0] });
       uni.showToast({ title: "头像已更新", icon: "success" });
     },
   });
 }
 
 function editProfile() {
-  editForm.nickname = userInfo.value.nickname || "";
-  editForm.school = userInfo.value.school || "";
-  editForm.bio = userInfo.value.bio || "";
+  if (!isOwnProfile.value) return;
+  editForm.nickname = userStore.userInfo?.nickname || "";
+  editForm.school = userStore.userInfo?.school || "";
+  editForm.bio = userStore.userInfo?.bio || "";
   showEditModal.value = true;
 }
 
 function saveProfile() {
-  // 将表单修改后的最新数据赋给 userInfo
-  userInfo.value.nickname = editForm.nickname;
-  userInfo.value.school = editForm.school;
-  userInfo.value.bio = editForm.bio;
-  
+  userStore.updateProfile({
+    nickname: editForm.nickname,
+    school: editForm.school,
+    bio: editForm.bio,
+  });
+
   showEditModal.value = false;
   uni.showToast({ title: "保存成功", icon: "success" });
 }
@@ -244,7 +317,7 @@ function onLogout() {
     content: "确定退出登录吗？",
     success: ({ confirm }) => {
       if (confirm) {
-        userInfo.value = {}; // ✅ 直接清空当前的响应式数据
+        userStore.logout();
         uni.reLaunch({ url: "/pages/login/index" });
       }
     },

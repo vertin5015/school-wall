@@ -16,7 +16,7 @@
         <!-- 作者信息 -->
         <view class="author-row">
           <view class="author-avatar">{{ post.authorAvatar }}</view>
-          <view class="author-info">
+          <view class="author-info" @tap="goAuthorProfile">
             <text class="author-name">{{
               post.isAnon ? "匿名用户" : post.author
             }}</text>
@@ -27,7 +27,13 @@
 
         <!-- 正文 -->
         <view class="detail-content">
-          <text class="content-text">{{ post.content }}</text>
+          <ParsedPostText
+            class="content-text"
+            :content="post.content"
+            multiline
+            @mention="goMentionProfile"
+            @tag="goTagSearch"
+          />
         </view>
 
         <!-- 图片 -->
@@ -79,7 +85,13 @@
                 <text class="comment-name">{{ comment.author }}</text>
                 <text v-if="comment.isAuthor" class="author-badge">楼主</text>
               </view>
-              <text class="comment-text">{{ comment.content }}</text>
+              <ParsedPostText
+                class="comment-text"
+                :content="comment.content"
+                multiline
+                @mention="goMentionProfile"
+                @tag="goTagSearch"
+              />
               <view class="comment-footer">
                 <text class="comment-time">{{ comment.time }}</text>
                 <view class="comment-like" @tap="likeComment(comment)">
@@ -164,10 +176,11 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from "vue";
+import { ref, computed } from "vue";
 import { onLoad } from "@dcloudio/uni-app";
 import { usePostsStore } from "@/stores/posts";
 import { useUserStore } from "@/stores/user";
+import ParsedPostText from "@/components/ParsedPostText.vue";
 
 const postsStore = usePostsStore();
 const userStore = useUserStore();
@@ -219,6 +232,21 @@ function onFollow() {
   uni.showToast({ title: "已关注", icon: "success" });
 }
 
+function goAuthorProfile() {
+  if (!post.value || post.value.isAnon || !post.value.authorId) return;
+  uni.navigateTo({
+    url: `/pages/user-profile/index?userId=${post.value.authorId}`,
+  });
+}
+
+function goMentionProfile(name) {
+  uni.navigateTo({ url: `/pages/user-profile/index?name=${encodeURIComponent(name)}` });
+}
+
+function goTagSearch(tag) {
+  uni.navigateTo({ url: `/pages/search/index?keyword=${encodeURIComponent(tag)}` });
+}
+
 function previewImg(index) {
   if (!post.value?.images?.length) return;
   uni.previewImage({
@@ -239,6 +267,7 @@ function hideInput() {
 function submitComment() {
   if (!commentText.value.trim()) return;
   postsStore.addComment(postId.value, {
+    authorId: userStore.userInfo?.id || 999,
     author: userStore.userInfo?.nickname || "我",
     avatar: userStore.userInfo?.avatar || "🍊",
     content: commentText.value.trim(),

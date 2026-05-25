@@ -46,6 +46,10 @@
     {
       "path": "pages/profile/index",
       "style": { "navigationBarTitleText": "我的" }
+    },
+    {
+      "path": "pages/user-profile/index",
+      "style": { "navigationBarTitleText": "TA 的主页" }
     }
   ],
   "tabBar": {

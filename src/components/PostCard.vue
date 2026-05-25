@@ -3,7 +3,7 @@
     <!-- 头部：头像 + 作者 + 标签 -->
     <view class="post-header">
       <view class="post-avatar">{{ post.authorAvatar }}</view>
-      <view class="post-meta">
+      <view class="post-meta" @tap.stop="goProfile">
         <view class="post-author-row">
           <text class="post-author">{{
             post.isAnon ? "匿名用户" : post.author
@@ -21,7 +21,13 @@
     <text class="post-title">{{ post.title }}</text>
 
     <!-- 正文摘要 -->
-    <text class="post-excerpt">{{ post.content }}</text>
+    <ParsedPostText
+      class="post-excerpt"
+      :content="post.content"
+      :max-lines="2"
+      @mention="goMentionProfile"
+      @tag="goTagSearch"
+    />
 
     <!-- 图片预览（最多3张） -->
     <view v-if="post.images && post.images.length" class="post-img-row">
@@ -67,6 +73,7 @@
 
 <script setup>
 import { usePostsStore } from "@/stores/posts";
+import ParsedPostText from "@/components/ParsedPostText.vue";
 
 const props = defineProps({
   post: { type: Object, required: true },
@@ -76,6 +83,19 @@ const postsStore = usePostsStore();
 
 function goDetail() {
   uni.navigateTo({ url: `/pages/post-detail/index?id=${props.post.id}` });
+}
+
+function goProfile() {
+  if (props.post.isAnon || !props.post.authorId) return;
+  uni.navigateTo({ url: `/pages/user-profile/index?userId=${props.post.authorId}` });
+}
+
+function goMentionProfile(name) {
+  uni.navigateTo({ url: `/pages/user-profile/index?name=${encodeURIComponent(name)}` });
+}
+
+function goTagSearch(tag) {
+  uni.navigateTo({ url: `/pages/search/index?keyword=${encodeURIComponent(tag)}` });
 }
 
 function onLike() {
@@ -189,13 +209,9 @@ function onShare() {
   color: var(--text-sub);
   line-height: 1.7;
   margin-bottom: 16rpx;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
   display: block;
-  /* 两行截断 fallback */
   max-height: 3.4em;
+  overflow: hidden;
 }
 
 .post-img-row {

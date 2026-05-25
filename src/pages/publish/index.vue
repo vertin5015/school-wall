@@ -22,6 +22,9 @@
             v-model="content"
             placeholder="分享你的故事、问题或想法...（支持 @ 同学，# 话题标签）"
           />
+          <text class="content-tip"
+            >输入如 @数学学长 或 #期末复习，发布后可直接点击跳转</text
+          >
           <text class="word-count">{{ content.length }}/2000</text>
         </view>
 
@@ -59,10 +62,10 @@
           <view class="tag-list">
             <view
               v-for="tag in availableTags"
-              :key="tag.value"
+              :key="tag.label"
               class="tag-option"
-              :class="{ selected: selectedTag === tag.value }"
-              @tap="selectTag(tag.value)"
+              :class="{ selected: selectedTag === tag.label }"
+              @tap="selectTag(tag)"
             >
               <text>{{ tag.label }}</text>
             </view>
@@ -129,17 +132,6 @@ const availableTags = [
   { value: "gray", label: "🏠 校园生活" },
 ];
 
-const tagLabelMap = {
-  "🍜 美食": "美食",
-  "📚 学习": "学习",
-  "💕 表白": "表白",
-  "🌱 资源": "资源",
-  "😤 吐槽": "吐槽",
-  "🎮 娱乐": "娱乐",
-  "🏃 运动": "运动",
-  "🏠 校园生活": "校园生活",
-};
-
 const canPublish = computed(
   () => title.value.trim().length > 0 && content.value.trim().length > 0,
 );
@@ -159,12 +151,8 @@ function removeImg(index) {
   selectedImages.value.splice(index, 1);
 }
 
-function selectTag(value) {
-  // 找到对应的 label
-  const tag = availableTags.find((t) => t.value === value);
-  if (tag) {
-    selectedTag.value = selectedTag.value === tag.label ? "" : tag.label;
-  }
+function selectTag(tag) {
+  selectedTag.value = selectedTag.value === tag.label ? "" : tag.label;
 }
 
 function onPublish() {
@@ -176,7 +164,7 @@ function onPublish() {
   postsStore.addPost({
     title: title.value.trim(),
     content: content.value.trim(),
-    images: selectedImages.value,
+    images: [...selectedImages.value],
     tag: selectedTag.value
       ? selectedTag.value.replace(/^.+?\s/, "")
       : "校园生活",
@@ -270,6 +258,13 @@ function onPublish() {
   color: var(--text-sub);
   line-height: 1.8;
   min-height: 280rpx;
+}
+
+.content-tip {
+  display: block;
+  margin-top: 12rpx;
+  font-size: 22rpx;
+  color: var(--text-hint);
 }
 
 .word-count {

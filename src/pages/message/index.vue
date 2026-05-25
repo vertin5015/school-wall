@@ -59,25 +59,21 @@
 </template>
 
 <script setup>
-import { ref } from "vue";
+import { computed } from "vue";
 import { onShow, onLoad } from "@dcloudio/uni-app";
-import { mockConversations } from "../../mock/data";
+import { useChatStore } from "@/stores/chat";
 
-const conversations = ref([]);
+const chatStore = useChatStore();
+const conversations = computed(() => chatStore.conversationList);
 
 onLoad(() => {
-  console.log("Message Index onLoad");
-  conversations.value = [...mockConversations];
 });
 
 onShow(() => {
-  console.log("Message Index onShow");
-  conversations.value = [...mockConversations];
 });
 
 function goChat(conv) {
-  // 清除未读
-  conv.unread = 0;
+  chatStore.markRead(conv.id);
   uni.navigateTo({
     url: `/pages/message/chat?id=${conv.id}&name=${encodeURIComponent(conv.name)}&avatar=${encodeURIComponent(conv.avatar)}`,
   });

@@ -1,11 +1,20 @@
 import { defineStore } from "pinia";
-import { mockUser } from "../mock/data";
+import { mockUser, mockUsers } from "../mock/data";
 
 export const useUserStore = defineStore("user", {
   state: () => ({
     isLoggedIn: true,
     userInfo: { ...mockUser },
+    users: [...mockUsers],
   }),
+  getters: {
+    getUserById: (state) => (id) =>
+      [state.userInfo, ...state.users].find((user) => Number(user?.id) === Number(id)),
+    getUserByName: (state) => (name) =>
+      [state.userInfo, ...state.users].find(
+        (user) => user?.nickname === name || user?.name === name,
+      ),
+  },
   actions: {
     wxLogin() {
       // 模拟微信登录，实际项目中调用 uni.login + 后端接口
