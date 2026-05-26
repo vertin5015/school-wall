@@ -32,18 +32,18 @@
         <!-- 数据统计 -->
         <view class="stat-bar">
           <view class="stat-item" @tap="goMyPosts">
-            <text class="stat-num">{{ authoredPosts.length }}</text>
+            <text class="stat-num">{{ displayPostCount }}</text>
             <text class="stat-label">帖子</text>
           </view>
           <view class="stat-divider"></view>
           <view class="stat-item">
-            <text class="stat-num">{{ receivedLikeCount }}</text>
+            <text class="stat-num">{{ displayLikeCount }}</text>
             <text class="stat-label">获赞</text>
           </view>
           <template v-if="isOwnProfile">
             <view class="stat-divider"></view>
             <view class="stat-item" @tap="activeTab = 'collect'">
-              <text class="stat-num">{{ collectedPosts.length }}</text>
+              <text class="stat-num">{{ displayCollectCount }}</text>
               <text class="stat-label">收藏</text>
             </view>
           </template>
@@ -171,7 +171,7 @@
 
 <script setup>
 import { ref, computed, reactive } from "vue";
-import { onLoad } from "@dcloudio/uni-app";
+import { onLoad, onShow } from "@dcloudio/uni-app";
 import PostCard from "@/components/PostCard.vue";
 import { usePostsStore } from "@/stores/posts";
 import { useUserStore } from "@/stores/user";
@@ -193,6 +193,19 @@ const editForm = reactive({
 onLoad((options) => {
   routeUserId.value = options.userId ? Number(options.userId) : null;
   routeUserName.value = options.name ? decodeURIComponent(options.name) : "";
+});
+
+onShow(() => {
+  if (!routeUserId.value && !routeUserName.value) {
+    userStore.fetchCurrentUser().catch(() => {});
+    postsStore.fetchMyPosts().catch(() => {});
+    postsStore.fetchMyCollections().catch(() => {});
+    return;
+  }
+  if (routeUserId.value) {
+    userStore.fetchUserById(routeUserId.value).catch(() => {});
+    postsStore.fetchUserPosts(routeUserId.value).catch(() => {});
+  }
 });
 
 const isOwnProfile = computed(() => {
@@ -232,30 +245,31 @@ const displayUser = computed(() => {
 
 const authoredPosts = computed(() => {
   if (isOwnProfile.value) {
-    const ownPostIds = userStore.userInfo?.myPosts || [];
-    return postsStore.postList.filter(
-      (post) =>
-        ownPostIds.includes(post.id) ||
-        Number(post.authorId) === Number(userStore.userInfo?.id),
-    );
+    return postsStore.myPosts;
   }
   if (!displayUser.value?.id) return [];
-  return postsStore.postList.filter(
-    (post) => Number(post.authorId) === Number(displayUser.value.id),
-  );
+  return postsStore.userPostsMap[displayUser.value.id] || [];
 });
 
 const collectedPosts = computed(() => {
   if (!isOwnProfile.value) return [];
-  return postsStore.postList.filter(
-    (post) =>
-      post.collected ||
-      userStore.userInfo?.myCollects?.includes(post.id),
-  );
+  return postsStore.myCollections;
 });
 
-const receivedLikeCount = computed(() =>
-  authoredPosts.value.reduce((total, post) => total + Number(post.likes || 0), 0),
+const displayPostCount = computed(
+  () => Number(displayUser.value?.postCount ?? authoredPosts.value.length ?? 0),
+);
+
+const displayLikeCount = computed(
+  () =>
+    Number(
+      displayUser.value?.likeCount ??
+        authoredPosts.value.reduce((total, post) => total + Number(post.likes || 0), 0),
+    ),
+);
+
+const displayCollectCount = computed(
+  () => Number(displayUser.value?.collectCount ?? collectedPosts.value.length ?? 0),
 );
 
 const settingItems = [
@@ -285,9 +299,13 @@ function changeAvatar() {
     count: 1,
     sizeType: ["compressed"],
     sourceType: ["album", "camera"],
-    success: ({ tempFilePaths }) => {
-      userStore.updateProfile({ avatar: tempFilePaths[0] });
-      uni.showToast({ title: "头像已更新", icon: "success" });
+    success: async ({ tempFilePaths }) => {
+      try {
+        await userStore.uploadAvatar(tempFilePaths[0]);
+        uni.showToast({ title: "头像已更新", icon: "success" });
+      } catch (error) {
+        uni.showToast({ title: error?.message || "更新失败", icon: "none" });
+      }
     },
   });
 }
@@ -300,15 +318,18 @@ function editProfile() {
   showEditModal.value = true;
 }
 
-function saveProfile() {
-  userStore.updateProfile({
-    nickname: editForm.nickname,
-    school: editForm.school,
-    bio: editForm.bio,
-  });
-
-  showEditModal.value = false;
-  uni.showToast({ title: "保存成功", icon: "success" });
+async function saveProfile() {
+  try {
+    await userStore.updateProfile({
+      nickname: editForm.nickname,
+      school: editForm.school,
+      bio: editForm.bio,
+    });
+    showEditModal.value = false;
+    uni.showToast({ title: "保存成功", icon: "success" });
+  } catch (error) {
+    uni.showToast({ title: error?.message || "保存失败", icon: "none" });
+  }
 }
 
 function onLogout() {

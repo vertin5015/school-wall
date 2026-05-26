@@ -80,7 +80,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from "vue";
+import { ref, onMounted } from "vue";
 import { usePostsStore } from "@/stores/posts";
 import PostCard from "@/components/PostCard.vue";
 
@@ -97,32 +97,44 @@ const tabs = [
   { key: "love", label: "表白墙" },
 ];
 
+onMounted(() => {
+  postsStore.fetchPostsByTab("latest", { refresh: true }).catch(showError);
+});
+
 function getFilteredPosts(key) {
-  const all = postsStore.postList;
-  if (key === "hot") return [...all].sort((a, b) => b.likes - a.likes);
-  if (key === "hole") return all.filter((p) => p.isAnon);
-  if (key === "love") return all.filter((p) => p.tag === "表白");
-  return all;
+  return postsStore.getPostsByTab(key);
 }
 
 function switchTab(index) {
   activeIndex.value = index;
+  const tabKey = tabs[index].key;
+  postsStore.setActiveTab(tabKey);
+  if (!postsStore.getPostsByTab(tabKey).length) {
+    postsStore.fetchPostsByTab(tabKey, { refresh: true }).catch(showError);
+  }
 }
 
 function onSwiperChange(e) {
-  activeIndex.value = e.detail.current;
+  switchTab(e.detail.current);
 }
 
 async function onRefresh() {
   refreshing.value = true;
-  // 模拟刷新延迟
-  setTimeout(() => {
+  try {
+    const tabKey = tabs[activeIndex.value].key;
+    postsStore.setActiveTab(tabKey);
+    await postsStore.fetchPostsByTab(tabKey, { refresh: true });
+  } catch (error) {
+    showError(error);
+  } finally {
     refreshing.value = false;
-  }, 800);
+  }
 }
 
 function loadMore() {
-  // 实际项目中分页加载
+  const tabKey = tabs[activeIndex.value].key;
+  postsStore.setActiveTab(tabKey);
+  postsStore.fetchPostsByTab(tabKey).catch(showError);
 }
 
 function goSearch() {
@@ -149,6 +161,13 @@ function onBanner() {
 function goPublish() {
   uni.navigateTo({
     url: "/pages/publish/index",
+  });
+}
+
+function showError(error) {
+  uni.showToast({
+    title: error?.message || "加载失败",
+    icon: "none",
   });
 }
 </script>

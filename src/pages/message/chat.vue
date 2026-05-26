@@ -35,7 +35,13 @@
         >
           <!-- 对方头像 -->
           <view v-if="!msg.fromMe" class="chat-avatar-wrap">
-            <view class="chat-avatar">{{ chatAvatar }}</view>
+            <image
+              v-if="String(chatAvatar).includes('/')"
+              :src="chatAvatar"
+              class="chat-avatar chat-avatar-image"
+              mode="aspectFill"
+            />
+            <view v-else class="chat-avatar">{{ chatAvatar }}</view>
           </view>
 
         <!-- 消息主体 -->
@@ -64,7 +70,13 @@
 
           <!-- 自己头像 -->
           <view v-if="msg.fromMe" class="chat-avatar-wrap">
-            <view class="chat-avatar chat-avatar-me">{{ myAvatar }}</view>
+            <image
+              v-if="String(myAvatar).includes('/')"
+              :src="myAvatar"
+              class="chat-avatar chat-avatar-me chat-avatar-image"
+              mode="aspectFill"
+            />
+            <view v-else class="chat-avatar chat-avatar-me">{{ myAvatar }}</view>
           </view>
         </view>
 
@@ -108,14 +120,15 @@
 <script setup>
 import { ref, computed, onMounted, nextTick } from "vue";
 import { onLoad, onUnload } from "@dcloudio/uni-app";
-import { mockUser } from "../../mock/data";
 import { useChatStore } from "@/stores/chat";
+import { useUserStore } from "@/stores/user";
 
 const chatName = ref("用户");
 const chatAvatar = ref("👤");
-const conversationId = ref(0);
-const myAvatar = mockUser.avatar;
+const targetUserId = ref(0);
 const chatStore = useChatStore();
+const userStore = useUserStore();
+const myAvatar = computed(() => userStore.userInfo?.avatar || "🙂");
 
 const keyboardHeight = ref(0);
 
@@ -139,19 +152,17 @@ function onKeyboardHeightChange(e) {
 }
 
 onLoad((options) => {
-  const chatId = Number(options.id || 1);
-  conversationId.value = chatId;
+  const chatId = Number(options.userId || options.id || 0);
+  targetUserId.value = chatId;
   if (options.name) chatName.value = decodeURIComponent(options.name);
   if (options.avatar) chatAvatar.value = decodeURIComponent(options.avatar);
 
-  const conv = chatStore.getConversationById(chatId);
+  const conv = chatStore.getConversationByUserId(chatId);
   if (conv) {
     chatName.value = options.name ? decodeURIComponent(options.name) : conv.name;
-    chatAvatar.value = options.avatar
-      ? decodeURIComponent(options.avatar)
-      : conv.avatar;
-    chatStore.markRead(chatId);
+    chatAvatar.value = options.avatar ? decodeURIComponent(options.avatar) : conv.avatar;
   }
+  loadChat();
 });
 
 onUnload(() => {
@@ -162,7 +173,7 @@ const inputText = ref("");
 const scrollTop = ref(99999);
 const lastMsgId = ref("");
 const messages = computed(
-  () => chatStore.getConversationById(conversationId.value)?.messages || [],
+  () => chatStore.getMessagesByUserId(targetUserId.value) || [],
 );
 
 const today = new Date().toLocaleDateString("zh-CN", {
@@ -185,27 +196,14 @@ function scrollToBottom() {
 
 function sendMsg() {
   if (!inputText.value.trim()) return;
-  chatStore.sendText(conversationId.value, inputText.value.trim());
-  inputText.value = "";
-  scrollToBottom();
-
-  // 模拟对方回复
-  setTimeout(() => {
-    const replies = [
-      "好的！",
-      "哈哈😄",
-      "收到~",
-      "明白了",
-      "好的好的",
-      "谢谢！",
-    ];
-    chatStore.receiveText(
-      conversationId.value,
-      replies[Math.floor(Math.random() * replies.length)],
-    );
-    chatStore.markRead(conversationId.value);
-    scrollToBottom();
-  }, 1000);
+  chatStore
+    .sendText(targetUserId.value, inputText.value.trim(), userStore.userInfo?.id)
+    .then(() => {
+      inputText.value = "";
+      scrollToBottom();
+      chatStore.fetchConversations().catch(() => {});
+    })
+    .catch(showError);
 }
 
 function goBack() {
@@ -217,7 +215,7 @@ function showMore() {
     itemList: ["查看对方主页", "投诉/举报", "清空聊天记录"],
     success: ({ tapIndex }) => {
       if (tapIndex === 0) {
-        const conv = chatStore.getConversationById(conversationId.value);
+        const conv = chatStore.getConversationByUserId(targetUserId.value);
         if (!conv?.userId) return;
         uni.navigateTo({
           url: `/pages/user-profile/index?userId=${conv.userId}`,
@@ -228,7 +226,7 @@ function showMore() {
           title: "提示",
           content: "确定清空聊天记录吗？",
           success: ({ confirm }) => {
-            if (confirm) chatStore.clearMessages(conversationId.value);
+            if (confirm) chatStore.clearMessages(targetUserId.value);
           },
         });
       }
@@ -256,11 +254,21 @@ function chooseSingleImage() {
     count: 1,
     sizeType: ["compressed"],
     sourceType: ["album", "camera"],
-    success: ({ tempFilePaths }) => {
+    success: async ({ tempFilePaths }) => {
       const imageUrl = tempFilePaths?.[0];
       if (!imageUrl) return;
-      chatStore.sendImage(conversationId.value, imageUrl);
-      scrollToBottom();
+      try {
+        const uploaded = await chatStore.uploadMessageImage(imageUrl);
+        await chatStore.sendImage(
+          targetUserId.value,
+          uploaded,
+          userStore.userInfo?.id,
+        );
+        scrollToBottom();
+        chatStore.fetchConversations().catch(() => {});
+      } catch (error) {
+        showError(error);
+      }
     },
   });
 }
@@ -284,6 +292,26 @@ function getStatusText(status) {
     failed: "发送失败",
   };
   return statusMap[status] || "已发送";
+}
+
+async function loadChat() {
+  if (!targetUserId.value || !userStore.isLoggedIn) {
+    return;
+  }
+  try {
+    await chatStore.fetchChatHistory(targetUserId.value, userStore.userInfo?.id);
+    await chatStore.markRead(targetUserId.value);
+    scrollToBottom();
+  } catch (error) {
+    showError(error);
+  }
+}
+
+function showError(error) {
+  uni.showToast({
+    title: error?.message || "发送失败",
+    icon: "none",
+  });
 }
 </script>
 

@@ -1,61 +1,41 @@
 import { defineStore } from "pinia";
-import { mockConversations, mockUser } from "@/mock/data";
+import { request, upload, getFileUrl } from "@/utils/http";
 
-function nowTime() {
-  return new Date().toLocaleTimeString("zh-CN", {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+function normalizeConversation(raw = {}) {
+  return {
+    id: raw.id || raw.userId,
+    userId: raw.userId || raw.id,
+    name: raw.name || raw.nickname || "校园同学",
+    avatar: getFileUrl(raw.avatar) || "👤",
+    lastMsg: raw.lastMsg || raw.lastMessage || "",
+    lastTime: raw.lastTime || raw.lastMessageTime || "",
+    unread: Number(raw.unread || raw.unreadCount || 0),
+  };
 }
 
-function imagePreviewText() {
-  return "[图片]";
-}
-
-function normalizeMessage(raw, conversation) {
-  const fromMe =
-    typeof raw.fromMe === "boolean"
-      ? raw.fromMe
-      : Number(raw.senderId) === Number(mockUser.id);
-
-  const type = raw.type || (raw.imageUrl ? "image" : "text");
-
+function normalizeMessage(raw = {}, currentUserId) {
   return {
     id: raw.id,
-    conversationId: raw.conversationId || conversation.id,
-    senderId: raw.senderId || (fromMe ? mockUser.id : conversation.userId),
-    receiverId: raw.receiverId || (fromMe ? conversation.userId : mockUser.id),
-    fromMe,
-    type,
+    fromId: raw.fromId,
+    toId: raw.toId,
     content: raw.content || "",
-    imageUrl: raw.imageUrl || "",
-    status: raw.status || "sent",
-    createdAt: raw.createdAt || raw.time || nowTime(),
-    time: raw.time || nowTime(),
+    type: raw.type || "text",
+    fileUrl: getFileUrl(raw.fileUrl),
+    imageUrl: getFileUrl(raw.fileUrl),
+    fromMe:
+      typeof raw.fromMe === "boolean"
+        ? raw.fromMe
+        : Number(raw.fromId) === Number(currentUserId),
+    time: raw.time || "",
+    fullTime: raw.fullTime || "",
+    status: "sent",
   };
-}
-
-function normalizeConversation(raw) {
-  const messages = (raw.messages || []).map((message) =>
-    normalizeMessage(message, raw),
-  );
-
-  return {
-    ...raw,
-    lastMsg: raw.lastMsg || "",
-    lastTime: raw.lastTime || "",
-    unread: raw.unread || 0,
-    messages,
-  };
-}
-
-function getMessagePreview(message) {
-  return message.type === "image" ? imagePreviewText() : message.content;
 }
 
 export const useChatStore = defineStore("chat", {
   state: () => ({
-    conversations: mockConversations.map((item) => normalizeConversation(item)),
+    conversations: [],
+    messagesByUserId: {},
   }),
   getters: {
     conversationList: (state) => state.conversations,
@@ -63,87 +43,118 @@ export const useChatStore = defineStore("chat", {
       state.conversations.find((item) => Number(item.id) === Number(id)),
     getConversationByUserId: (state) => (userId) =>
       state.conversations.find((item) => Number(item.userId) === Number(userId)),
+    getMessagesByUserId: (state) => (userId) => state.messagesByUserId[userId] || [],
   },
   actions: {
-    markRead(conversationId) {
-      const conversation = this.getConversationById(conversationId);
-      if (conversation) conversation.unread = 0;
-    },
-    upsertConversationMeta(conversation, message) {
-      conversation.lastMsg = getMessagePreview(message);
-      conversation.lastTime = message.time;
-    },
-    ensureConversation(payload) {
-      const existing = this.getConversationByUserId(payload.userId);
-      if (existing) return existing;
-
-      const conversation = normalizeConversation({
-        id: Date.now(),
-        userId: payload.userId,
-        name: payload.name,
-        avatar: payload.avatar,
-        lastMsg: "",
-        lastTime: "",
-        unread: 0,
-        messages: [],
-      });
-
-      this.conversations.unshift(conversation);
-      return conversation;
-    },
-    appendMessage(conversationId, messagePayload) {
-      const conversation = this.getConversationById(conversationId);
-      if (!conversation) return null;
-
-      const message = normalizeMessage(
-        {
-          id: Date.now() + Math.floor(Math.random() * 1000),
-          ...messagePayload,
-        },
-        conversation,
+    upsertConversation(conversation) {
+      const normalized = normalizeConversation(conversation);
+      const index = this.conversations.findIndex(
+        (item) => Number(item.userId) === Number(normalized.userId),
       );
-
-      conversation.messages.push(message);
-      this.upsertConversationMeta(conversation, message);
+      if (index >= 0) {
+        const next = {
+          ...this.conversations[index],
+          ...normalized,
+        };
+        this.conversations.splice(index, 1);
+        this.conversations.unshift(next);
+        return next;
+      } else {
+        this.conversations.unshift(normalized);
+      }
+      return normalized;
+    },
+    async fetchConversations() {
+      const data = await request({
+        url: "/api/messages/conversations",
+      });
+      this.conversations = data.map((item) => normalizeConversation(item));
+      return this.conversations;
+    },
+    async fetchChatHistory(targetUserId, currentUserId) {
+      const data = await request({
+        url: `/api/messages/chat/${targetUserId}`,
+        data: {
+          page: 1,
+          size: 50,
+        },
+      });
+      this.messagesByUserId[targetUserId] = (data?.records || []).map((item) =>
+        normalizeMessage(item, currentUserId),
+      );
+      return this.messagesByUserId[targetUserId];
+    },
+    async sendText(targetUserId, content, currentUserId) {
+      const data = await request({
+        url: "/api/messages/send",
+        method: "POST",
+        data: {
+          toId: targetUserId,
+          type: "text",
+          content,
+        },
+        header: {
+          "Content-Type": "application/json",
+        },
+      });
+      const message = normalizeMessage(data, currentUserId);
+      this.messagesByUserId[targetUserId] = [
+        ...(this.messagesByUserId[targetUserId] || []),
+        message,
+      ];
+      this.upsertConversation({
+        id: targetUserId,
+        userId: targetUserId,
+        lastMsg: content,
+        lastTime: message.time,
+      });
       return message;
     },
-    sendText(conversationId, content) {
-      return this.appendMessage(conversationId, {
-        fromMe: true,
-        type: "text",
-        content,
-        status: "sent",
-        time: nowTime(),
+    async uploadMessageImage(filePath) {
+      const data = await upload({
+        url: "/api/messages/image/upload",
+        filePath,
       });
+      return getFileUrl(data?.url);
     },
-    sendImage(conversationId, imageUrl) {
-      return this.appendMessage(conversationId, {
-        fromMe: true,
-        type: "image",
-        imageUrl,
-        content: "",
-        status: "sent",
-        time: nowTime(),
+    async sendImage(targetUserId, fileUrl, currentUserId) {
+      const data = await request({
+        url: "/api/messages/send",
+        method: "POST",
+        data: {
+          toId: targetUserId,
+          type: "image",
+          fileUrl,
+        },
+        header: {
+          "Content-Type": "application/json",
+        },
       });
-    },
-    receiveText(conversationId, content) {
-      const message = this.appendMessage(conversationId, {
-        fromMe: false,
-        type: "text",
-        content,
-        status: "received",
-        time: nowTime(),
+      const message = normalizeMessage(data, currentUserId);
+      this.messagesByUserId[targetUserId] = [
+        ...(this.messagesByUserId[targetUserId] || []),
+        message,
+      ];
+      this.upsertConversation({
+        id: targetUserId,
+        userId: targetUserId,
+        lastMsg: "[图片]",
+        lastTime: message.time,
       });
-      const conversation = this.getConversationById(conversationId);
-      if (conversation) conversation.unread += 1;
       return message;
     },
-    clearMessages(conversationId) {
-      const conversation = this.getConversationById(conversationId);
-      if (!conversation) return;
-      conversation.messages = [];
-      conversation.lastMsg = "";
-      conversation.lastTime = "";
+    async markRead(userId) {
+      await request({
+        url: `/api/messages/read/${userId}`,
+        method: "PUT",
+      });
+      const conversation = this.getConversationByUserId(userId);
+      if (conversation) {
+        conversation.unread = 0;
+      }
+    },
+    clearMessages(userId) {
+      this.messagesByUserId[userId] = [];
     },
   },
 });

@@ -1,8 +1,14 @@
 <script setup>
 import { onLaunch, onShow, onHide } from "@dcloudio/uni-app";
+import { useUserStore } from "@/stores/user";
+
+const userStore = useUserStore();
 
 onLaunch(() => {
   console.log("App Launch");
+  userStore.bootstrapDevSession().catch((error) => {
+    console.warn("Dev session bootstrap failed:", error?.message || error);
+  });
 });
 
 onShow(() => {

@@ -2,7 +2,13 @@
   <view class="post-card card" @tap="goDetail">
     <!-- 头部：头像 + 作者 + 标签 -->
     <view class="post-header">
-      <view class="post-avatar">{{ post.authorAvatar }}</view>
+      <image
+        v-if="String(post.authorAvatar).includes('/')"
+        :src="post.authorAvatar"
+        class="post-avatar"
+        mode="aspectFill"
+      />
+      <view v-else class="post-avatar">{{ post.authorAvatar }}</view>
       <view class="post-meta" @tap.stop="goProfile">
         <view class="post-author-row">
           <text class="post-author">{{
@@ -99,11 +105,15 @@ function goTagSearch(tag) {
 }
 
 function onLike() {
-  postsStore.toggleLike(props.post.id);
+  postsStore.toggleLike(props.post.id).catch((error) => {
+    uni.showToast({ title: error?.message || "操作失败", icon: "none" });
+  });
 }
 
 function onCollect() {
-  postsStore.toggleCollect(props.post.id);
+  postsStore.toggleCollect(props.post.id).catch((error) => {
+    uni.showToast({ title: error?.message || "操作失败", icon: "none" });
+  });
 }
 
 function onShare() {

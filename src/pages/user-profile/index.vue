@@ -24,12 +24,12 @@
 
         <view class="stat-bar">
           <view class="stat-item">
-            <text class="stat-num">{{ authoredPosts.length }}</text>
+            <text class="stat-num">{{ displayPostCount }}</text>
             <text class="stat-label">帖子</text>
           </view>
           <view class="stat-divider"></view>
           <view class="stat-item">
-            <text class="stat-num">{{ receivedLikeCount }}</text>
+            <text class="stat-num">{{ displayLikeCount }}</text>
             <text class="stat-label">获赞</text>
           </view>
         </view>
@@ -58,15 +58,13 @@
 
 <script setup>
 import { computed, ref } from "vue";
-import { onLoad } from "@dcloudio/uni-app";
+import { onLoad, onShow } from "@dcloudio/uni-app";
 import PostCard from "@/components/PostCard.vue";
 import { usePostsStore } from "@/stores/posts";
 import { useUserStore } from "@/stores/user";
-import { useChatStore } from "@/stores/chat";
 
 const postsStore = usePostsStore();
 const userStore = useUserStore();
-const chatStore = useChatStore();
 
 const routeUserId = ref(null);
 const routeUserName = ref("");
@@ -74,6 +72,17 @@ const routeUserName = ref("");
 onLoad((options) => {
   routeUserId.value = options.userId ? Number(options.userId) : null;
   routeUserName.value = options.name ? decodeURIComponent(options.name) : "";
+  if (routeUserId.value) {
+    userStore.fetchUserById(routeUserId.value).catch(() => {});
+    postsStore.fetchUserPosts(routeUserId.value).catch(() => {});
+  }
+});
+
+onShow(() => {
+  if (routeUserId.value) {
+    userStore.fetchUserById(routeUserId.value).catch(() => {});
+    postsStore.fetchUserPosts(routeUserId.value).catch(() => {});
+  }
 });
 
 const displayUser = computed(() => {
@@ -102,25 +111,29 @@ const displayUser = computed(() => {
 
 const authoredPosts = computed(() => {
   if (!displayUser.value?.id) return [];
-  return postsStore.postList.filter(
-    (post) => Number(post.authorId) === Number(displayUser.value.id),
-  );
+  return postsStore.userPostsMap[displayUser.value.id] || [];
 });
 
-const receivedLikeCount = computed(() =>
-  authoredPosts.value.reduce((total, post) => total + Number(post.likes || 0), 0),
+const displayPostCount = computed(
+  () => Number(displayUser.value?.postCount ?? authoredPosts.value.length ?? 0),
+);
+
+const displayLikeCount = computed(
+  () =>
+    Number(
+      displayUser.value?.likeCount ??
+        authoredPosts.value.reduce((total, post) => total + Number(post.likes || 0), 0),
+    ),
 );
 
 function startChat() {
   if (!displayUser.value?.id) return;
-  const conversation = chatStore.ensureConversation({
-    userId: displayUser.value.id,
-    name: displayUser.value.nickname,
-    avatar: displayUser.value.avatar || "🙂",
-  });
-
+  if (!userStore.isLoggedIn) {
+    uni.showToast({ title: "请先登录", icon: "none" });
+    return;
+  }
   uni.navigateTo({
-    url: `/pages/message/chat?id=${conversation.id}&name=${encodeURIComponent(conversation.name)}&avatar=${encodeURIComponent(conversation.avatar)}`,
+    url: `/pages/message/chat?userId=${displayUser.value.id}&name=${encodeURIComponent(displayUser.value.nickname)}&avatar=${encodeURIComponent(displayUser.value.avatar || "🙂")}`,
   });
 }
 </script>

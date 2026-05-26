@@ -15,7 +15,13 @@
 
         <!-- 作者信息 -->
         <view class="author-row">
-          <view class="author-avatar">{{ post.authorAvatar }}</view>
+          <image
+            v-if="String(post.authorAvatar).includes('/')"
+            :src="post.authorAvatar"
+            class="author-avatar"
+            mode="aspectFill"
+          />
+          <view v-else class="author-avatar">{{ post.authorAvatar }}</view>
           <view class="author-info" @tap="goAuthorProfile">
             <text class="author-name">{{
               post.isAnon ? "匿名用户" : post.author
@@ -79,7 +85,13 @@
             class="comment-item"
             :class="{ 'is-author': comment.isAuthor }"
           >
-            <view class="comment-av">{{ comment.avatar }}</view>
+            <image
+              v-if="String(comment.avatar).includes('/')"
+              :src="comment.avatar"
+              class="comment-av"
+              mode="aspectFill"
+            />
+            <view v-else class="comment-av">{{ comment.avatar }}</view>
             <view class="comment-right">
               <view class="comment-name-row">
                 <text class="comment-name">{{ comment.author }}</text>
@@ -177,7 +189,7 @@
 
 <script setup>
 import { ref, computed } from "vue";
-import { onLoad } from "@dcloudio/uni-app";
+import { onLoad, onShow } from "@dcloudio/uni-app";
 import { usePostsStore } from "@/stores/posts";
 import { useUserStore } from "@/stores/user";
 import ParsedPostText from "@/components/ParsedPostText.vue";
@@ -192,6 +204,13 @@ const postId = ref(0);
 onLoad((options) => {
   if (options.id) {
     postId.value = Number(options.id);
+    postsStore.fetchPostDetail(postId.value).catch(showError);
+  }
+});
+
+onShow(() => {
+  if (postId.value) {
+    postsStore.fetchPostDetail(postId.value).catch(() => {});
   }
 });
 
@@ -216,12 +235,20 @@ function showMore() {
   });
 }
 
-function onLike() {
-  postsStore.toggleLike(postId.value);
+async function onLike() {
+  try {
+    await postsStore.toggleLike(postId.value);
+  } catch (error) {
+    showError(error);
+  }
 }
 
-function onCollect() {
-  postsStore.toggleCollect(postId.value);
+async function onCollect() {
+  try {
+    await postsStore.toggleCollect(postId.value);
+  } catch (error) {
+    showError(error);
+  }
 }
 
 function onShare() {
@@ -264,22 +291,36 @@ function hideInput() {
   commentText.value = "";
 }
 
-function submitComment() {
+async function submitComment() {
   if (!commentText.value.trim()) return;
-  postsStore.addComment(postId.value, {
-    authorId: userStore.userInfo?.id || 999,
-    author: userStore.userInfo?.nickname || "我",
-    avatar: userStore.userInfo?.avatar || "🍊",
-    content: commentText.value.trim(),
-  });
-  commentText.value = "";
-  showCommentInput.value = false;
-  uni.showToast({ title: "评论成功", icon: "success" });
+  try {
+    await postsStore.addComment(postId.value, {
+      content: commentText.value.trim(),
+    });
+    commentText.value = "";
+    showCommentInput.value = false;
+    uni.showToast({ title: "评论成功", icon: "success" });
+  } catch (error) {
+    showError(error);
+  }
 }
 
-function likeComment(comment) {
-  comment.liked = !comment.liked;
-  comment.likes += comment.liked ? 1 : -1;
+async function likeComment(comment) {
+  try {
+    await postsStore.likeComment({
+      ...comment,
+      postId: post.value?.id,
+    });
+  } catch (error) {
+    showError(error);
+  }
+}
+
+function showError(error) {
+  uni.showToast({
+    title: error?.message || "操作失败",
+    icon: "none",
+  });
 }
 </script>
 

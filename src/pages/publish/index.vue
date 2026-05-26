@@ -120,6 +120,7 @@ const selectedImages = ref([]);
 const selectedTag = ref("");
 const isAnon = ref(false);
 const onlyMe = ref(false);
+const publishing = ref(false);
 
 const availableTags = [
   { value: "orange", label: "🍜 美食" },
@@ -133,7 +134,10 @@ const availableTags = [
 ];
 
 const canPublish = computed(
-  () => title.value.trim().length > 0 && content.value.trim().length > 0,
+  () =>
+    !publishing.value &&
+    title.value.trim().length >= 2 &&
+    content.value.trim().length >= 10,
 );
 
 function chooseImg() {
@@ -155,30 +159,39 @@ function selectTag(tag) {
   selectedTag.value = selectedTag.value === tag.label ? "" : tag.label;
 }
 
-function onPublish() {
+async function onPublish() {
+  if (!userStore.isLoggedIn) {
+    uni.showToast({ title: "请先登录", icon: "none" });
+    return;
+  }
   if (!canPublish.value) return;
   const tagEntry = availableTags.find((t) => t.label === selectedTag.value) || {
     value: "gray",
     label: "校园生活",
   };
-  postsStore.addPost({
-    title: title.value.trim(),
-    content: content.value.trim(),
-    images: [...selectedImages.value],
-    tag: selectedTag.value
-      ? selectedTag.value.replace(/^.+?\s/, "")
-      : "校园生活",
-    tagColor: tagEntry.value,
-    isAnon: isAnon.value,
-    author: userStore.userInfo?.nickname || "匿名用户",
-    authorAvatar: userStore.userInfo?.avatar || "🍊",
-    authorId: userStore.userInfo?.id || 999,
-    emoji: "",
-  });
-  uni.showToast({ title: "发布成功！", icon: "success" });
-  setTimeout(() => {
-    uni.navigateBack();
-  }, 800);
+  publishing.value = true;
+  try {
+    const images = await postsStore.uploadPostImages(selectedImages.value);
+    await postsStore.createPost({
+      title: title.value.trim(),
+      content: content.value.trim(),
+      images,
+      tag: selectedTag.value
+        ? selectedTag.value.replace(/^.+?\s/, "")
+        : "校园生活",
+      tagColor: tagEntry.value,
+      isAnon: isAnon.value,
+      isPrivate: onlyMe.value,
+    });
+    uni.showToast({ title: "发布成功！", icon: "success" });
+    setTimeout(() => {
+      uni.navigateBack();
+    }, 800);
+  } catch (error) {
+    uni.showToast({ title: error?.message || "发布失败", icon: "none" });
+  } finally {
+    publishing.value = false;
+  }
 }
 </script>
 

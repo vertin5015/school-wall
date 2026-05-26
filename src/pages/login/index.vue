@@ -52,11 +52,10 @@ async function handleWxLogin() {
   if (loading.value) return;
   loading.value = true;
   try {
-    await userStore.wxLogin();
-    // 登录成功，跳转到首页（switchTab 适配底部Tab场景）
+    await userStore.loginWithDemo();
     uni.switchTab({ url: "/pages/home/index" });
   } catch (e) {
-    uni.showToast({ title: "登录失败，请重试", icon: "none" });
+    uni.showToast({ title: e?.message || "登录失败，请重试", icon: "none" });
   } finally {
     loading.value = false;
   }

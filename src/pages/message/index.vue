@@ -30,7 +30,13 @@
           @tap="goChat(conv)"
         >
           <view class="conv-avatar-wrap">
-            <view class="conv-avatar">{{ conv.avatar }}</view>
+            <image
+              v-if="String(conv.avatar).includes('/')"
+              :src="conv.avatar"
+              class="conv-avatar"
+              mode="aspectFill"
+            />
+            <view v-else class="conv-avatar">{{ conv.avatar }}</view>
             <view v-if="conv.unread > 0" class="unread-badge">{{
               conv.unread > 99 ? "99+" : conv.unread
             }}</view>
@@ -62,20 +68,28 @@
 import { computed } from "vue";
 import { onShow, onLoad } from "@dcloudio/uni-app";
 import { useChatStore } from "@/stores/chat";
+import { useUserStore } from "@/stores/user";
 
 const chatStore = useChatStore();
+const userStore = useUserStore();
 const conversations = computed(() => chatStore.conversationList);
 
 onLoad(() => {
 });
 
 onShow(() => {
+  if (!userStore.isLoggedIn) {
+    return;
+  }
+  chatStore.fetchConversations().catch((error) => {
+    uni.showToast({ title: error?.message || "加载失败", icon: "none" });
+  });
 });
 
 function goChat(conv) {
-  chatStore.markRead(conv.id);
+  chatStore.markRead(conv.userId).catch(() => {});
   uni.navigateTo({
-    url: `/pages/message/chat?id=${conv.id}&name=${encodeURIComponent(conv.name)}&avatar=${encodeURIComponent(conv.avatar)}`,
+    url: `/pages/message/chat?userId=${conv.userId}&name=${encodeURIComponent(conv.name)}&avatar=${encodeURIComponent(conv.avatar)}`,
   });
 }
 

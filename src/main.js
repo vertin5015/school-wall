@@ -10,6 +10,6 @@ export function createApp() {
 
   return {
     app,
-    Pinia,
+    pinia,
   };
 }
